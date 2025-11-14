@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mylly - Nine Men's Morris</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Mylly (Nine Men's Morris)</h1>
+
+        <div class="game-info">
+            <div class="player-info">
+                <div id="player1-info" class="player active">
+                    <div class="player-indicator white"></div>
+                    <span>White Player</span>
+                    <div class="pieces-remaining">Pieces: <span id="white-remaining">9</span></div>
+                </div>
+                <div id="player2-info" class="player">
+                    <div class="player-indicator black"></div>
+                    <span>Black Player</span>
+                    <div class="pieces-remaining">Pieces: <span id="black-remaining">9</span></div>
+                </div>
+            </div>
+
+            <div class="game-status">
+                <div id="phase-display">Phase: <span id="current-phase">Placement</span></div>
+                <div id="turn-display">Turn: <span id="current-turn">White</span></div>
+                <div id="action-display"><span id="current-action">Place your piece</span></div>
+            </div>
+        </div>
+
+        <div class="board-container">
+            <svg id="game-board" viewBox="0 0 700 700">
+                <!-- Outer square -->
+                <line x1="50" y1="50" x2="650" y2="50" class="board-line"/>
+                <line x1="650" y1="50" x2="650" y2="650" class="board-line"/>
+                <line x1="650" y1="650" x2="50" y2="650" class="board-line"/>
+                <line x1="50" y1="650" x2="50" y2="50" class="board-line"/>
+
+                <!-- Middle square -->
+                <line x1="150" y1="150" x2="550" y2="150" class="board-line"/>
+                <line x1="550" y1="150" x2="550" y2="550" class="board-line"/>
+                <line x1="550" y1="550" x2="150" y2="550" class="board-line"/>
+                <line x1="150" y1="550" x2="150" y2="150" class="board-line"/>
+
+                <!-- Inner square -->
+                <line x1="250" y1="250" x2="450" y2="250" class="board-line"/>
+                <line x1="450" y1="250" x2="450" y2="450" class="board-line"/>
+                <line x1="450" y1="450" x2="250" y2="450" class="board-line"/>
+                <line x1="250" y1="450" x2="250" y2="250" class="board-line"/>
+
+                <!-- Connecting lines -->
+                <line x1="350" y1="50" x2="350" y2="250" class="board-line"/>
+                <line x1="350" y1="450" x2="350" y2="650" class="board-line"/>
+                <line x1="50" y1="350" x2="250" y2="350" class="board-line"/>
+                <line x1="450" y1="350" x2="650" y2="350" class="board-line"/>
+
+                <!-- Position points -->
+                <!-- Outer square positions (0-7) -->
+                <circle cx="50" cy="50" r="15" class="position" data-pos="0"/>
+                <circle cx="350" cy="50" r="15" class="position" data-pos="1"/>
+                <circle cx="650" cy="50" r="15" class="position" data-pos="2"/>
+                <circle cx="650" cy="350" r="15" class="position" data-pos="3"/>
+                <circle cx="650" cy="650" r="15" class="position" data-pos="4"/>
+                <circle cx="350" cy="650" r="15" class="position" data-pos="5"/>
+                <circle cx="50" cy="650" r="15" class="position" data-pos="6"/>
+                <circle cx="50" cy="350" r="15" class="position" data-pos="7"/>
+
+                <!-- Middle square positions (8-15) -->
+                <circle cx="150" cy="150" r="15" class="position" data-pos="8"/>
+                <circle cx="350" cy="150" r="15" class="position" data-pos="9"/>
+                <circle cx="550" cy="150" r="15" class="position" data-pos="10"/>
+                <circle cx="550" cy="350" r="15" class="position" data-pos="11"/>
+                <circle cx="550" cy="550" r="15" class="position" data-pos="12"/>
+                <circle cx="350" cy="550" r="15" class="position" data-pos="13"/>
+                <circle cx="150" cy="550" r="15" class="position" data-pos="14"/>
+                <circle cx="150" cy="350" r="15" class="position" data-pos="15"/>
+
+                <!-- Inner square positions (16-23) -->
+                <circle cx="250" cy="250" r="15" class="position" data-pos="16"/>
+                <circle cx="350" cy="250" r="15" class="position" data-pos="17"/>
+                <circle cx="450" cy="250" r="15" class="position" data-pos="18"/>
+                <circle cx="450" cy="350" r="15" class="position" data-pos="19"/>
+                <circle cx="450" cy="450" r="15" class="position" data-pos="20"/>
+                <circle cx="350" cy="450" r="15" class="position" data-pos="21"/>
+                <circle cx="250" cy="450" r="15" class="position" data-pos="22"/>
+                <circle cx="250" cy="350" r="15" class="position" data-pos="23"/>
+            </svg>
+        </div>
+
+        <div class="controls">
+            <button id="reset-btn">New Game</button>
+            <button id="rules-btn">Rules</button>
+        </div>
+
+        <div id="rules-modal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Mylly Rules (Nine Men's Morris)</h2>
+                <div class="rules-text">
+                    <h3>Objective</h3>
+                    <p>Reduce your opponent to 2 pieces or block all their moves.</p>
+
+                    <h3>Phase 1 - Placement</h3>
+                    <ul>
+                        <li>Players alternate placing their 9 pieces on empty positions</li>
+                        <li>Form a "mill" (3 pieces in a row) to remove an opponent's piece</li>
+                        <li>Pieces in a mill cannot be removed unless no other option exists</li>
+                    </ul>
+
+                    <h3>Phase 2 - Movement</h3>
+                    <ul>
+                        <li>After all pieces are placed, move one piece to an adjacent empty position</li>
+                        <li>Form a mill to remove an opponent's piece</li>
+                        <li>You can repeatedly open and close the same mill</li>
+                    </ul>
+
+                    <h3>Phase 3 - Flying</h3>
+                    <ul>
+                        <li>When reduced to 3 pieces, you can move to ANY empty position</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-over-modal" class="modal">
+            <div class="modal-content">
+                <h2>Game Over!</h2>
+                <p id="winner-text"></p>
+                <button id="new-game-btn">New Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
