@@ -107,6 +107,7 @@
 
         <div class="controls">
             <button id="reset-btn">New Game</button>
+            <button id="settings-btn">Settings</button>
             <button id="rules-btn">Rules</button>
         </div>
 
@@ -163,6 +164,31 @@
                 <h2>Game Over!</h2>
                 <p id="winner-text"></p>
                 <button id="new-game-btn">New Game</button>
+            </div>
+        </div>
+
+        <div id="settings-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="close-settings">&times;</span>
+                <h2>Settings</h2>
+                <div class="settings-content">
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <strong>Mill Removal During Placement</strong>
+                            <p class="setting-description">Choose how pieces are removed when you form a mill during the placement phase.</p>
+                        </div>
+                        <div class="setting-control">
+                            <label class="switch">
+                                <input type="checkbox" id="removal-variant-toggle">
+                                <span class="slider"></span>
+                            </label>
+                            <div class="toggle-labels">
+                                <span class="toggle-label" id="removal-from-board">Remove from Board</span>
+                                <span class="toggle-label active" id="removal-from-hand">Remove from Hand</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         </div>

@@ -19,7 +19,8 @@ const gameState = {
     moveFrom: null, // Track position piece moved from
     moveHistory: [], // Track all moves for playback
     isPlaybackMode: false, // Whether we're in playback mode
-    playbackIndex: -1 // Current position in playback (-1 = live game)
+    playbackIndex: -1, // Current position in playback (-1 = live game)
+    removeFromHand: true // Setting: true = remove from hand during placement, false = remove from board
 };
 
 // Define adjacencies for each position
@@ -73,8 +74,15 @@ function initGame() {
     });
 
     document.getElementById('reset-btn').addEventListener('click', showGameModeModal);
+    document.getElementById('settings-btn').addEventListener('click', showSettings);
     document.getElementById('rules-btn').addEventListener('click', showRules);
     document.getElementById('new-game-btn').addEventListener('click', showGameModeModal);
+
+    // Settings toggle
+    const removalToggle = document.getElementById('removal-variant-toggle');
+    removalToggle.checked = gameState.removeFromHand;
+    document.getElementById('removal-variant-toggle').addEventListener('change', handleRemovalVariantToggle);
+    document.getElementById('close-settings').addEventListener('click', hideSettings);
 
     // Game mode selection
     document.getElementById('pvp-btn').addEventListener('click', () => startGame('pvp'));
@@ -100,8 +108,12 @@ function initGame() {
 
     window.addEventListener('click', (e) => {
         const rulesModal = document.getElementById('rules-modal');
+        const settingsModal = document.getElementById('settings-modal');
         if (e.target === rulesModal) {
             hideRules();
+        }
+        if (e.target === settingsModal) {
+            hideSettings();
         }
     });
 
@@ -180,12 +192,42 @@ function handlePlacement(posIndex) {
     // Check for mill
     if (isInMill(posIndex, gameState.currentPlayer)) {
         gameState.millFormed = true;
-        gameState.phase = 'removal';
-        updateDisplay();
 
-        // AI handles removal
-        if (gameState.gameMode === 'pva' && gameState.currentPlayer === 'black') {
-            setTimeout(() => aiRemovePiece(), 1200);
+        // Check if we should remove from hand (placement phase only)
+        const inPlacementPhase = (gameState.whitePlaced < 9 || gameState.blackPlaced < 9);
+        if (gameState.removeFromHand && inPlacementPhase) {
+            // Remove from hand variant: reduce opponent's pieces to place
+            const opponent = gameState.currentPlayer === 'white' ? 'black' : 'white';
+            if (gameState.piecesToPlace[opponent] > 0) {
+                gameState.piecesToPlace[opponent]--;
+
+                // Record the hand removal in move history
+                recordMove('remove-hand', -1);
+            }
+
+            gameState.millFormed = false;
+            switchPlayer();
+
+            // Check if all pieces are placed
+            if (gameState.whitePlaced === 9 && gameState.blackPlaced === 9) {
+                gameState.phase = 'movement';
+            }
+
+            updateDisplay();
+
+            // AI makes next move
+            if (gameState.gameMode === 'pva' && gameState.currentPlayer === 'black') {
+                setTimeout(() => aiMakeMove(), 800);
+            }
+        } else {
+            // Standard variant: remove from board
+            gameState.phase = 'removal';
+            updateDisplay();
+
+            // AI handles removal
+            if (gameState.gameMode === 'pva' && gameState.currentPlayer === 'black') {
+                setTimeout(() => aiRemovePiece(), 1200);
+            }
         }
     } else {
         switchPlayer();
@@ -1177,6 +1219,30 @@ function showRules() {
 
 function hideRules() {
     document.getElementById('rules-modal').style.display = 'none';
+}
+
+function showSettings() {
+    document.getElementById('settings-modal').style.display = 'block';
+}
+
+function hideSettings() {
+    document.getElementById('settings-modal').style.display = 'none';
+}
+
+function handleRemovalVariantToggle(e) {
+    gameState.removeFromHand = e.target.checked;
+
+    // Update label styling
+    const fromBoardLabel = document.getElementById('removal-from-board');
+    const fromHandLabel = document.getElementById('removal-from-hand');
+
+    if (gameState.removeFromHand) {
+        fromBoardLabel.classList.remove('active');
+        fromHandLabel.classList.add('active');
+    } else {
+        fromBoardLabel.classList.add('active');
+        fromHandLabel.classList.remove('active');
+    }
 }
 
 function showGameOver(winner) {
