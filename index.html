@@ -111,6 +111,7 @@
             <button id="reset-btn">New Game</button>
             <button id="settings-btn">Settings</button>
             <button id="stats-btn">Statistics</button>
+            <button id="analysis-btn">Analysis</button>
             <button id="rules-btn">Rules</button>
         </div>
 
@@ -204,6 +205,18 @@
                             <div class="stat-value" id="stat-best-streak">0</div>
                             <div class="stat-label">Best Streak</div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="analysis-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="close-analysis">&times;</span>
+                <h2>Game Analysis</h2>
+                <div class="analysis-content">
+                    <div id="games-list">
+                        <p class="no-games">No games recorded yet. Finish a game to see it here for analysis.</p>
                     </div>
                 </div>
             </div>

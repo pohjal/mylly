@@ -201,6 +201,7 @@ function initGame() {
     document.getElementById('reset-btn').addEventListener('click', showGameModeModal);
     document.getElementById('settings-btn').addEventListener('click', showSettings);
     document.getElementById('stats-btn').addEventListener('click', showStats);
+    document.getElementById('analysis-btn').addEventListener('click', showAnalysis);
     document.getElementById('rules-btn').addEventListener('click', showRules);
     document.getElementById('new-game-btn').addEventListener('click', showGameModeModal);
 
@@ -215,6 +216,7 @@ function initGame() {
 
     document.getElementById('close-settings').addEventListener('click', hideSettings);
     document.getElementById('close-stats').addEventListener('click', hideStats);
+    document.getElementById('close-analysis').addEventListener('click', hideAnalysis);
 
     // Game mode selection
     document.getElementById('pvp-btn').addEventListener('click', () => startGame('pvp'));
@@ -242,6 +244,7 @@ function initGame() {
         const rulesModal = document.getElementById('rules-modal');
         const settingsModal = document.getElementById('settings-modal');
         const statsModal = document.getElementById('stats-modal');
+        const analysisModal = document.getElementById('analysis-modal');
         if (e.target === rulesModal) {
             hideRules();
         }
@@ -250,6 +253,9 @@ function initGame() {
         }
         if (e.target === statsModal) {
             hideStats();
+        }
+        if (e.target === analysisModal) {
+            hideAnalysis();
         }
     });
 
@@ -1652,6 +1658,73 @@ function updateStatsDisplay() {
 
     document.getElementById('stat-streak').textContent = stats.currentStreak;
     document.getElementById('stat-best-streak').textContent = stats.bestStreak;
+}
+
+function showAnalysis() {
+    displayGamesList();
+    document.getElementById('analysis-modal').style.display = 'block';
+}
+
+function hideAnalysis() {
+    document.getElementById('analysis-modal').style.display = 'none';
+}
+
+function displayGamesList() {
+    const gamesList = document.getElementById('games-list');
+
+    if (gameState.savedGames.length === 0) {
+        gamesList.innerHTML = '<p class="no-games">No games recorded yet. Finish a game to see it here for analysis.</p>';
+        return;
+    }
+
+    gamesList.innerHTML = '';
+
+    gameState.savedGames.forEach((game, index) => {
+        const gameDiv = document.createElement('div');
+        gameDiv.className = 'game-record';
+
+        const date = new Date(game.date);
+        const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        let result = 'Draw';
+        let resultClass = 'draw';
+        if (game.gameMode === 'pva') {
+            if (game.winner === 'white') {
+                result = 'Win';
+                resultClass = 'win';
+            } else if (game.winner === 'black') {
+                result = 'Loss';
+                resultClass = 'loss';
+            }
+        } else {
+            result = game.winner === 'white' ? 'White Won' : 'Black Won';
+            resultClass = game.winner === 'white' ? 'win' : 'loss';
+        }
+
+        const modeText = game.gameMode === 'pva'
+            ? `vs AI (${game.aiDifficulty})`
+            : 'vs Player';
+
+        gameDiv.innerHTML = `
+            <div class="game-record-header">
+                <div class="game-date">${dateStr}</div>
+                <div class="game-result ${resultClass}">${result}</div>
+            </div>
+            <div class="game-details">
+                <div class="game-detail-item">Mode: ${modeText}</div>
+                <div class="game-detail-item">Moves: ${game.moves.length}</div>
+            </div>
+        `;
+
+        gameDiv.addEventListener('click', () => analyzeGame(game));
+        gamesList.appendChild(gameDiv);
+    });
+}
+
+function analyzeGame(game) {
+    // For now, just show an alert with game info
+    // In a full implementation, this would open a detailed analysis view
+    alert(`Game Analysis\n\nDate: ${new Date(game.date).toLocaleString()}\nMode: ${game.gameMode}\nMoves: ${game.moves.length}\nWinner: ${game.winner}\n\nDetailed analysis feature coming soon!`);
 }
 
 // ==================== UNDO/REDO ====================

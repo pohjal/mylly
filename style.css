@@ -714,6 +714,85 @@ input:checked + .slider:before {
     letter-spacing: 0.5px;
 }
 
+/* Analysis */
+.analysis-content {
+    margin-top: 24px;
+}
+
+#games-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.no-games {
+    text-align: center;
+    color: #999;
+    padding: 40px 20px;
+    font-style: italic;
+}
+
+.game-record {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    background: #f8f8f8;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.game-record:hover {
+    background: #f0f0f0;
+    border-color: #2c2c2c;
+}
+
+.game-record-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.game-date {
+    font-weight: 500;
+    color: #2c2c2c;
+}
+
+.game-result {
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.game-result.win {
+    background: #d4f4dd;
+    color: #2d5f3d;
+}
+
+.game-result.loss {
+    background: #f4d6d6;
+    color: #8b4545;
+}
+
+.game-result.draw {
+    background: #e8e8e8;
+    color: #666;
+}
+
+.game-details {
+    display: flex;
+    gap: 16px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.game-detail-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 /* Removal Mode Indicator */
 .removal-indicator {
     position: fixed;
