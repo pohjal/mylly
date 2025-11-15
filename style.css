@@ -395,6 +395,76 @@ button {
     font-weight: 600;
 }
 
+.game-mode-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.mode-btn {
+    padding: 18px 32px;
+    font-size: 1.2em;
+    background: linear-gradient(135deg, #e94560, #d63447);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.mode-btn:hover {
+    background: linear-gradient(135deg, #d63447, #c0293a);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(233, 69, 96, 0.5);
+}
+
+.difficulty-select {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 2px solid rgba(233, 69, 96, 0.3);
+}
+
+.difficulty-select h3 {
+    color: #e94560;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.difficulty-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.difficulty-btn {
+    padding: 12px 24px;
+    font-size: 1em;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.difficulty-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #e94560;
+}
+
+.difficulty-btn.active {
+    background: linear-gradient(135deg, #e94560, #d63447);
+    border-color: #e94560;
+    box-shadow: 0 4px 12px rgba(233, 69, 96, 0.4);
+}
+
 @media (max-width: 768px) {
     h1 {
         font-size: 2em;

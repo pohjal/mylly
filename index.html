@@ -125,6 +125,24 @@
             </div>
         </div>
 
+        <div id="game-mode-modal" class="modal" style="display: block;">
+            <div class="modal-content">
+                <h2>Select Game Mode</h2>
+                <div class="game-mode-buttons">
+                    <button id="pvp-btn" class="mode-btn">Player vs Player</button>
+                    <button id="pva-btn" class="mode-btn">Player vs AI</button>
+                </div>
+                <div class="difficulty-select" id="difficulty-select" style="display: none;">
+                    <h3>AI Difficulty</h3>
+                    <div class="difficulty-buttons">
+                        <button class="difficulty-btn" data-difficulty="easy">Easy</button>
+                        <button class="difficulty-btn" data-difficulty="medium">Medium</button>
+                        <button class="difficulty-btn active" data-difficulty="hard">Hard</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="game-over-modal" class="modal">
             <div class="modal-content">
                 <h2>Game Over!</h2>

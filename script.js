@@ -9,7 +9,10 @@ const gameState = {
     blackPlaced: 0,
     selectedPosition: null,
     millFormed: false,
-    pieceCount: { white: 0, black: 0 }
+    pieceCount: { white: 0, black: 0 },
+    gameMode: null, // 'pvp' or 'pva'
+    aiDifficulty: 'hard', // 'easy', 'medium', 'hard'
+    isAIThinking: false
 };
 
 // Define adjacencies for each position
@@ -52,6 +55,9 @@ const mills = [
     [1, 9, 17], [3, 11, 19], [5, 13, 21], [7, 15, 23]
 ];
 
+// Strategic positions (corners and intersections are more valuable)
+const strategicPositions = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23];
+
 // Initialize game
 function initGame() {
     const positions = document.querySelectorAll('.position');
@@ -59,9 +65,25 @@ function initGame() {
         pos.addEventListener('click', handlePositionClick);
     });
 
-    document.getElementById('reset-btn').addEventListener('click', resetGame);
+    document.getElementById('reset-btn').addEventListener('click', showGameModeModal);
     document.getElementById('rules-btn').addEventListener('click', showRules);
-    document.getElementById('new-game-btn').addEventListener('click', resetGame);
+    document.getElementById('new-game-btn').addEventListener('click', showGameModeModal);
+
+    // Game mode selection
+    document.getElementById('pvp-btn').addEventListener('click', () => startGame('pvp'));
+    document.getElementById('pva-btn').addEventListener('click', () => {
+        document.getElementById('difficulty-select').style.display = 'block';
+    });
+
+    // Difficulty selection
+    document.querySelectorAll('.difficulty-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            gameState.aiDifficulty = e.target.getAttribute('data-difficulty');
+            startGame('pva');
+        });
+    });
 
     // Modal close handlers
     const closeBtn = document.querySelector('.close');
@@ -75,11 +97,28 @@ function initGame() {
             hideRules();
         }
     });
+}
 
-    updateDisplay();
+function showGameModeModal() {
+    document.getElementById('game-over-modal').style.display = 'none';
+    document.getElementById('game-mode-modal').style.display = 'block';
+    document.getElementById('difficulty-select').style.display = 'none';
+}
+
+function startGame(mode) {
+    gameState.gameMode = mode;
+    document.getElementById('game-mode-modal').style.display = 'none';
+    resetGame();
+
+    // Update player 2 label
+    const player2Label = document.querySelector('#player2-info span');
+    player2Label.textContent = mode === 'pva' ? 'AI Player' : 'Black Player';
 }
 
 function handlePositionClick(e) {
+    if (gameState.isAIThinking) return;
+    if (gameState.gameMode === 'pva' && gameState.currentPlayer === 'black') return;
+
     const posIndex = parseInt(e.target.getAttribute('data-pos'));
 
     if (gameState.phase === 'placement') {
@@ -115,6 +154,11 @@ function handlePlacement(posIndex) {
         gameState.millFormed = true;
         gameState.phase = 'removal';
         updateDisplay();
+
+        // AI handles removal
+        if (gameState.gameMode === 'pva' && gameState.currentPlayer === 'black') {
+            setTimeout(() => aiRemovePiece(), 500);
+        }
     } else {
         switchPlayer();
 
@@ -122,6 +166,11 @@ function handlePlacement(posIndex) {
         if (gameState.whitePlaced === 9 && gameState.blackPlaced === 9) {
             gameState.phase = 'movement';
             updateDisplay();
+        }
+
+        // AI makes next move
+        if (gameState.gameMode === 'pva' && gameState.currentPlayer === 'black') {
+            setTimeout(() => aiMakeMove(), 500);
         }
     }
 }
@@ -162,9 +211,19 @@ function handleMovement(posIndex) {
                 gameState.millFormed = true;
                 gameState.phase = 'removal';
                 updateDisplay();
+
+                // AI handles removal
+                if (gameState.gameMode === 'pva' && gameState.currentPlayer === 'black') {
+                    setTimeout(() => aiRemovePiece(), 500);
+                }
             } else {
                 switchPlayer();
                 checkGameOver();
+
+                // AI makes next move
+                if (gameState.gameMode === 'pva' && gameState.currentPlayer === 'black') {
+                    setTimeout(() => aiMakeMove(), 500);
+                }
             }
         } else {
             // Invalid move - try to select different piece
@@ -213,6 +272,11 @@ function handleRemoval(posIndex) {
     }
 
     switchPlayer();
+
+    // AI makes next move
+    if (gameState.gameMode === 'pva' && gameState.currentPlayer === 'black') {
+        setTimeout(() => aiMakeMove(), 500);
+    }
 }
 
 function isInMill(position, player) {
@@ -273,6 +337,312 @@ function checkHasValidMoves(player) {
     return false;
 }
 
+// ==================== AI LOGIC ====================
+
+function aiMakeMove() {
+    if (gameState.isAIThinking) return;
+    gameState.isAIThinking = true;
+
+    if (gameState.phase === 'placement') {
+        aiPlacePiece();
+    } else if (gameState.phase === 'movement') {
+        aiMovePiece();
+    }
+
+    gameState.isAIThinking = false;
+}
+
+function aiPlacePiece() {
+    const move = getBestPlacementMove();
+    if (move !== null) {
+        handlePlacement(move);
+    }
+}
+
+function aiMovePiece() {
+    const move = getBestMovementMove();
+    if (move) {
+        gameState.selectedPosition = move.from;
+        handleMovement(move.to);
+    }
+}
+
+function aiRemovePiece() {
+    const move = getBestRemovalMove();
+    if (move !== null) {
+        handleRemoval(move);
+    }
+}
+
+function getBestPlacementMove() {
+    const depth = getSearchDepth();
+    let bestScore = -Infinity;
+    let bestMove = null;
+
+    const emptyPositions = gameState.board
+        .map((piece, idx) => piece === null ? idx : -1)
+        .filter(idx => idx !== -1);
+
+    for (let pos of emptyPositions) {
+        const score = evaluatePlacementMove(pos, depth);
+        if (score > bestScore) {
+            bestScore = score;
+            bestMove = pos;
+        }
+    }
+
+    return bestMove;
+}
+
+function getBestMovementMove() {
+    const depth = getSearchDepth();
+    let bestScore = -Infinity;
+    let bestMove = null;
+
+    const aiPositions = gameState.board
+        .map((piece, idx) => piece === 'black' ? idx : -1)
+        .filter(idx => idx !== -1);
+
+    const canFly = gameState.pieceCount.black === 3;
+
+    for (let from of aiPositions) {
+        const possibleMoves = canFly
+            ? gameState.board.map((piece, idx) => piece === null ? idx : -1).filter(idx => idx !== -1)
+            : adjacencies[from].filter(to => gameState.board[to] === null);
+
+        for (let to of possibleMoves) {
+            const score = evaluateMovementMove(from, to, depth);
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = { from, to };
+            }
+        }
+    }
+
+    return bestMove;
+}
+
+function getBestRemovalMove() {
+    const depth = getSearchDepth();
+    let bestScore = -Infinity;
+    let bestMove = null;
+
+    const opponentPositions = gameState.board
+        .map((piece, idx) => piece === 'white' ? idx : -1)
+        .filter(idx => idx !== -1);
+
+    for (let pos of opponentPositions) {
+        // Check if can be removed
+        if (isInMill(pos, 'white')) {
+            const hasNonMillPiece = opponentPositions.some(p => !isInMill(p, 'white'));
+            if (hasNonMillPiece) continue;
+        }
+
+        const score = evaluateRemovalMove(pos, depth);
+        if (score > bestScore) {
+            bestScore = score;
+            bestMove = pos;
+        }
+    }
+
+    return bestMove;
+}
+
+function getSearchDepth() {
+    switch (gameState.aiDifficulty) {
+        case 'easy': return 1;
+        case 'medium': return 2;
+        case 'hard': return 3;
+        default: return 3;
+    }
+}
+
+function evaluatePlacementMove(pos, depth) {
+    let score = 0;
+
+    // Simulate placing piece
+    gameState.board[pos] = 'black';
+    gameState.pieceCount.black++;
+
+    // Check if forms mill
+    if (isInMill(pos, 'black')) {
+        score += 50;
+    }
+
+    // Check if blocks opponent mill
+    const blocksOpponentMill = checkBlocksMillFormation(pos, 'white');
+    if (blocksOpponentMill) {
+        score += 30;
+    }
+
+    // Check potential mills
+    score += countPotentialMills(pos, 'black') * 10;
+
+    // Strategic position bonus
+    if (strategicPositions.includes(pos)) {
+        score += 15;
+    }
+
+    // Evaluate board state
+    score += evaluateBoardState() * 5;
+
+    // Undo simulation
+    gameState.board[pos] = null;
+    gameState.pieceCount.black--;
+
+    // Add randomness for easier difficulties
+    if (gameState.aiDifficulty === 'easy') {
+        score += Math.random() * 40 - 20;
+    } else if (gameState.aiDifficulty === 'medium') {
+        score += Math.random() * 20 - 10;
+    }
+
+    return score;
+}
+
+function evaluateMovementMove(from, to, depth) {
+    let score = 0;
+
+    // Simulate move
+    gameState.board[to] = 'black';
+    gameState.board[from] = null;
+
+    // Check if forms mill
+    if (isInMill(to, 'black')) {
+        score += 50;
+    }
+
+    // Check if blocks opponent mill
+    const blocksOpponentMill = checkBlocksMillFormation(to, 'white');
+    if (blocksOpponentMill) {
+        score += 30;
+    }
+
+    // Check potential mills
+    score += countPotentialMills(to, 'black') * 10;
+
+    // Strategic position bonus
+    if (strategicPositions.includes(to)) {
+        score += 15;
+    }
+
+    // Mobility bonus
+    const mobility = adjacencies[to].filter(adj => gameState.board[adj] === null).length;
+    score += mobility * 5;
+
+    // Evaluate board state
+    score += evaluateBoardState() * 5;
+
+    // Undo simulation
+    gameState.board[from] = 'black';
+    gameState.board[to] = null;
+
+    // Add randomness for easier difficulties
+    if (gameState.aiDifficulty === 'easy') {
+        score += Math.random() * 40 - 20;
+    } else if (gameState.aiDifficulty === 'medium') {
+        score += Math.random() * 20 - 10;
+    }
+
+    return score;
+}
+
+function evaluateRemovalMove(pos, depth) {
+    let score = 0;
+
+    // Prioritize removing pieces that are part of potential mills
+    score += countPotentialMills(pos, 'white') * 20;
+
+    // Prioritize strategic positions
+    if (strategicPositions.includes(pos)) {
+        score += 25;
+    }
+
+    // Prioritize pieces in mills (if all are in mills)
+    if (isInMill(pos, 'white')) {
+        score += 15;
+    }
+
+    // Add randomness for easier difficulties
+    if (gameState.aiDifficulty === 'easy') {
+        score += Math.random() * 40 - 20;
+    } else if (gameState.aiDifficulty === 'medium') {
+        score += Math.random() * 20 - 10;
+    }
+
+    return score;
+}
+
+function evaluateBoardState() {
+    let score = 0;
+
+    // Piece count advantage
+    score += (gameState.pieceCount.black - gameState.pieceCount.white) * 10;
+
+    // Mill count
+    const aiMills = countMills('black');
+    const opponentMills = countMills('white');
+    score += (aiMills - opponentMills) * 15;
+
+    // Potential mills
+    const aiPotentialMills = countAllPotentialMills('black');
+    const opponentPotentialMills = countAllPotentialMills('white');
+    score += (aiPotentialMills - opponentPotentialMills) * 5;
+
+    return score;
+}
+
+function countMills(player) {
+    let count = 0;
+    for (let mill of mills) {
+        if (mill.every(pos => gameState.board[pos] === player)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+function countPotentialMills(pos, player) {
+    let count = 0;
+    for (let mill of mills) {
+        if (mill.includes(pos)) {
+            const playerPieces = mill.filter(p => gameState.board[p] === player).length;
+            const emptySpaces = mill.filter(p => gameState.board[p] === null).length;
+            if (playerPieces === 2 && emptySpaces === 1) {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
+function countAllPotentialMills(player) {
+    let count = 0;
+    for (let mill of mills) {
+        const playerPieces = mill.filter(p => gameState.board[p] === player).length;
+        const emptySpaces = mill.filter(p => gameState.board[p] === null).length;
+        if (playerPieces === 2 && emptySpaces === 1) {
+            count++;
+        }
+    }
+    return count;
+}
+
+function checkBlocksMillFormation(pos, player) {
+    for (let mill of mills) {
+        if (mill.includes(pos)) {
+            const playerPieces = mill.filter(p => gameState.board[p] === player).length;
+            const emptySpaces = mill.filter(p => gameState.board[p] === null).length;
+            if (playerPieces === 2 && emptySpaces === 1) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// ==================== DISPLAY & UI ====================
+
 function updateDisplay() {
     // Update player indicators
     document.getElementById('player1-info').classList.toggle('active', gameState.currentPlayer === 'white');
@@ -296,12 +666,15 @@ function updateDisplay() {
     document.getElementById('current-phase').textContent = phaseText;
 
     // Update turn display
-    document.getElementById('current-turn').textContent =
-        gameState.currentPlayer.charAt(0).toUpperCase() + gameState.currentPlayer.slice(1);
+    const turnText = gameState.currentPlayer === 'white' ? 'White' :
+                     (gameState.gameMode === 'pva' ? 'AI' : 'Black');
+    document.getElementById('current-turn').textContent = turnText;
 
     // Update action display
     let actionText = '';
-    if (gameState.phase === 'placement') {
+    if (gameState.isAIThinking) {
+        actionText = 'AI is thinking...';
+    } else if (gameState.phase === 'placement') {
         actionText = 'Place your piece';
     } else if (gameState.phase === 'removal') {
         actionText = 'Remove opponent piece';
@@ -341,8 +714,8 @@ function updateDisplay() {
         }
 
         // Highlight removable pieces
-        if (gameState.phase === 'removal') {
-            const opponent = gameState.currentPlayer === 'white' ? 'black' : 'white';
+        if (gameState.phase === 'removal' && gameState.currentPlayer === 'white') {
+            const opponent = 'black';
             if (gameState.board[idx] === opponent) {
                 // Check if can be removed
                 if (!isInMill(idx, opponent)) {
@@ -375,6 +748,7 @@ function resetGame() {
     gameState.selectedPosition = null;
     gameState.millFormed = false;
     gameState.pieceCount = { white: 0, black: 0 };
+    gameState.isAIThinking = false;
 
     document.getElementById('game-over-modal').style.display = 'none';
     updateDisplay();
@@ -389,7 +763,8 @@ function hideRules() {
 }
 
 function showGameOver(winner) {
-    const winnerText = winner.charAt(0).toUpperCase() + winner.slice(1) + ' wins!';
+    const winnerText = winner === 'white' ? 'White wins!' :
+                      (gameState.gameMode === 'pva' ? 'AI wins!' : 'Black wins!');
     document.getElementById('winner-text').textContent = winnerText;
     document.getElementById('game-over-modal').style.display = 'block';
 }
