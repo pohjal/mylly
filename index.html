@@ -115,6 +115,7 @@
             <button id="undo-btn" disabled>Undo</button>
             <button id="redo-btn" disabled>Redo</button>
             <button id="reset-btn">New Game</button>
+            <button id="tutorial-btn">Tutorial</button>
             <button id="settings-btn">Settings</button>
             <button id="stats-btn">Statistics</button>
             <button id="analysis-btn">Analysis</button>
@@ -211,6 +212,24 @@
                             <div class="stat-value" id="stat-best-streak">0</div>
                             <div class="stat-label">Best Streak</div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tutorial-modal" class="modal">
+            <div class="modal-content tutorial-content">
+                <span class="close" id="close-tutorial">&times;</span>
+                <h2>Tutorial</h2>
+                <div class="tutorial-step">
+                    <div id="tutorial-text" class="tutorial-text"></div>
+                    <div class="tutorial-progress">
+                        <span id="tutorial-step-number">Step 1</span> of <span id="tutorial-total-steps">7</span>
+                    </div>
+                    <div class="tutorial-controls">
+                        <button id="tutorial-prev" class="tutorial-btn" disabled>Previous</button>
+                        <button id="tutorial-skip" class="tutorial-btn secondary">Skip Tutorial</button>
+                        <button id="tutorial-next" class="tutorial-btn">Next</button>
                     </div>
                 </div>
             </div>

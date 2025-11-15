@@ -796,6 +796,86 @@ input:checked + .slider:before {
     letter-spacing: 0.5px;
 }
 
+/* Tutorial */
+.tutorial-content {
+    max-width: 700px;
+}
+
+.tutorial-step {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.tutorial-text {
+    font-size: 1.05em;
+    line-height: 1.7;
+    color: var(--text-primary);
+    min-height: 150px;
+}
+
+.tutorial-text h3 {
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    font-size: 1.2em;
+}
+
+.tutorial-text p {
+    margin-bottom: 12px;
+}
+
+.tutorial-text ul {
+    margin-left: 24px;
+    margin-bottom: 12px;
+}
+
+.tutorial-text li {
+    margin-bottom: 8px;
+}
+
+.tutorial-progress {
+    text-align: center;
+    font-size: 0.95em;
+    color: var(--text-secondary);
+    padding: 12px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+.tutorial-controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.tutorial-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    background: var(--text-primary);
+    color: var(--bg-secondary);
+    font-size: 1em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tutorial-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tutorial-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.tutorial-btn.secondary {
+    background: transparent;
+    border: 2px solid var(--border-primary);
+    color: var(--text-primary);
+}
+
 /* Analysis */
 .analysis-content {
     margin-top: 24px;

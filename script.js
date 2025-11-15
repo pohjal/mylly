@@ -29,6 +29,8 @@ const gameState = {
     savedGames: [], // List of saved game records
     hintPosition: null, // Position suggested by hint
     hintFromPosition: null, // Source position for movement hint
+    tutorialMode: false, // Whether tutorial is active
+    tutorialStep: 0, // Current tutorial step
     stats: {
         gamesPlayed: 0,
         wins: 0,
@@ -300,6 +302,7 @@ function initGame() {
     document.getElementById('settings-btn').addEventListener('click', showSettings);
     document.getElementById('stats-btn').addEventListener('click', showStats);
     document.getElementById('analysis-btn').addEventListener('click', showAnalysis);
+    document.getElementById('tutorial-btn').addEventListener('click', startTutorial);
     document.getElementById('rules-btn').addEventListener('click', showRules);
     document.getElementById('new-game-btn').addEventListener('click', showGameModeModal);
 
@@ -322,6 +325,12 @@ function initGame() {
     document.getElementById('close-settings').addEventListener('click', hideSettings);
     document.getElementById('close-stats').addEventListener('click', hideStats);
     document.getElementById('close-analysis').addEventListener('click', hideAnalysis);
+    document.getElementById('close-tutorial').addEventListener('click', closeTutorial);
+
+    // Tutorial controls
+    document.getElementById('tutorial-prev').addEventListener('click', () => navigateTutorial(-1));
+    document.getElementById('tutorial-next').addEventListener('click', () => navigateTutorial(1));
+    document.getElementById('tutorial-skip').addEventListener('click', closeTutorial);
 
     // Game mode selection
     document.getElementById('pvp-btn').addEventListener('click', () => startGame('pvp'));
@@ -350,6 +359,7 @@ function initGame() {
         const settingsModal = document.getElementById('settings-modal');
         const statsModal = document.getElementById('stats-modal');
         const analysisModal = document.getElementById('analysis-modal');
+        const tutorialModal = document.getElementById('tutorial-modal');
         if (e.target === rulesModal) {
             hideRules();
         }
@@ -361,6 +371,9 @@ function initGame() {
         }
         if (e.target === analysisModal) {
             hideAnalysis();
+        }
+        if (e.target === tutorialModal) {
+            closeTutorial();
         }
     });
 
@@ -1878,6 +1891,100 @@ function analyzeGame(game) {
     // For now, just show an alert with game info
     // In a full implementation, this would open a detailed analysis view
     alert(`Game Analysis\n\nDate: ${new Date(game.date).toLocaleString()}\nMode: ${game.gameMode}\nMoves: ${game.moves.length}\nWinner: ${game.winner}\n\nDetailed analysis feature coming soon!`);
+}
+
+// ==================== TUTORIAL SYSTEM ====================
+
+const tutorialSteps = [
+    {
+        title: "Welcome to Mylly!",
+        content: `<p>Mylly, also known as Nine Men's Morris, is an ancient strategy board game. This tutorial will teach you how to play!</p>
+                 <p>The game has three phases: <strong>Placement</strong>, <strong>Movement</strong>, and <strong>Removal</strong> (when you form a mill).</p>
+                 <p>Your goal is to form "mills" (three pieces in a row) to remove your opponent's pieces and win the game.</p>`
+    },
+    {
+        title: "Phase 1: Placement",
+        content: `<p>The game starts with the <strong>placement phase</strong>. Players take turns placing their 9 pieces on any empty position on the board.</p>
+                 <p><strong>White</strong> always goes first.</p>
+                 <p>Try to form mills (three in a row) while blocking your opponent from doing the same!</p>`
+    },
+    {
+        title: "Forming Mills",
+        content: `<p>A <strong>mill</strong> is formed when you get three of your pieces in a row, either horizontally or vertically (not diagonally).</p>
+                 <p>When you form a mill, you get to <strong>remove</strong> one of your opponent's pieces from the board!</p>
+                 <p><strong>Important:</strong> You cannot remove a piece that is part of an opponent's mill, unless all their pieces are in mills.</p>`
+    },
+    {
+        title: "Phase 2: Movement",
+        content: `<p>After all pieces are placed, the <strong>movement phase</strong> begins.</p>
+                 <p>On your turn, select one of your pieces and move it to an adjacent empty position along a line.</p>
+                 <p>Continue forming mills to remove your opponent's pieces!</p>`
+    },
+    {
+        title: "Flying Rule",
+        content: `<p>When a player is reduced to only <strong>3 pieces</strong>, they gain the special ability to "fly"!</p>
+                 <p>Flying means you can move your piece to <strong>any</strong> empty position on the board, not just adjacent ones.</p>
+                 <p>This gives you more flexibility when you're down to your last three pieces.</p>`
+    },
+    {
+        title: "Winning the Game",
+        content: `<p>You win the game by either:</p>
+                 <ul>
+                     <li>Reducing your opponent to <strong>2 pieces</strong> (they can't form mills anymore)</li>
+                     <li>Blocking all your opponent's pieces so they have <strong>no legal moves</strong></li>
+                 </ul>
+                 <p>Think strategically and plan ahead!</p>`
+    },
+    {
+        title: "Tips for Success",
+        content: `<p>Here are some tips to improve your game:</p>
+                 <ul>
+                     <li>Control the <strong>center positions</strong> - they're part of more potential mills</li>
+                     <li>Try to create <strong>double mills</strong> (two mills sharing a piece) for repeated captures</li>
+                     <li>Block your opponent from forming mills</li>
+                     <li>Use the <strong>Get Hint</strong> button if you're stuck!</li>
+                 </ul>
+                 <p>Ready to play? Close this tutorial and start a new game!</p>`
+    }
+];
+
+function startTutorial() {
+    gameState.tutorialMode = true;
+    gameState.tutorialStep = 0;
+    document.getElementById('tutorial-modal').style.display = 'block';
+    updateTutorialDisplay();
+}
+
+function closeTutorial() {
+    gameState.tutorialMode = false;
+    document.getElementById('tutorial-modal').style.display = 'none';
+}
+
+function navigateTutorial(direction) {
+    gameState.tutorialStep += direction;
+    gameState.tutorialStep = Math.max(0, Math.min(tutorialSteps.length - 1, gameState.tutorialStep));
+    updateTutorialDisplay();
+}
+
+function updateTutorialDisplay() {
+    const step = tutorialSteps[gameState.tutorialStep];
+    const textElement = document.getElementById('tutorial-text');
+    const stepNumber = document.getElementById('tutorial-step-number');
+    const prevBtn = document.getElementById('tutorial-prev');
+    const nextBtn = document.getElementById('tutorial-next');
+
+    textElement.innerHTML = `<h3>${step.title}</h3>${step.content}`;
+    stepNumber.textContent = `Step ${gameState.tutorialStep + 1}`;
+
+    // Update button states
+    prevBtn.disabled = gameState.tutorialStep === 0;
+    nextBtn.textContent = gameState.tutorialStep === tutorialSteps.length - 1 ? 'Finish' : 'Next';
+
+    if (gameState.tutorialStep === tutorialSteps.length - 1) {
+        nextBtn.onclick = closeTutorial;
+    } else {
+        nextBtn.onclick = () => navigateTutorial(1);
+    }
 }
 
 // ==================== HINT SYSTEM ====================
