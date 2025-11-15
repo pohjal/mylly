@@ -1,3 +1,43 @@
+:root {
+    --bg-primary: #f5f5f0;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f2f2ed;
+    --bg-quaternary: #f8f8f8;
+    --text-primary: #2c2c2c;
+    --text-secondary: #666;
+    --text-tertiary: #999;
+    --border-primary: #d8d8d8;
+    --border-secondary: #e0e0e0;
+    --board-line: #2c2c2c;
+    --piece-white: #d4d4d0;
+    --piece-black: #2c2c2c;
+    --shadow-light: rgba(0, 0, 0, 0.08);
+    --shadow-medium: rgba(0, 0, 0, 0.1);
+    --removal-bg: #f4d6d6;
+    --removal-text: #8b4545;
+    --removal-border: #c77575;
+}
+
+body.dark-theme {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-tertiary: #252525;
+    --bg-quaternary: #333333;
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --text-tertiary: #808080;
+    --border-primary: #404040;
+    --border-secondary: #4a4a4a;
+    --board-line: #e0e0e0;
+    --piece-white: #e8e8e8;
+    --piece-black: #1a1a1a;
+    --shadow-light: rgba(0, 0, 0, 0.3);
+    --shadow-medium: rgba(0, 0, 0, 0.4);
+    --removal-bg: #4a2828;
+    --removal-text: #ffb3b3;
+    --removal-border: #8b4545;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -6,21 +46,23 @@
 
 body {
     font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
-    background: #f5f5f0;
+    background: var(--bg-primary);
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 12px 12px;
+    transition: background-color 0.3s ease;
 }
 
 .container {
-    background: #ffffff;
+    background: var(--bg-secondary);
     border-radius: 8px;
     padding: 20px 20px;
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 16px var(--shadow-light);
     max-width: 950px;
     width: 100%;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* Game Selector */
@@ -36,7 +78,7 @@ body {
     padding: 10px 28px;
     font-size: 0.95em;
     background: transparent;
-    color: #666;
+    color: var(--text-secondary);
     border: none;
     border-bottom: 3px solid transparent;
     cursor: pointer;
@@ -46,13 +88,13 @@ body {
 }
 
 .game-tab:hover {
-    color: #2c2c2c;
+    color: var(--text-primary);
     background: #fafafa;
 }
 
 .game-tab.active {
-    color: #2c2c2c;
-    border-bottom-color: #2c2c2c;
+    color: var(--text-primary);
+    border-bottom-color: var(--text-primary);
     font-weight: 500;
 }
 
@@ -71,7 +113,7 @@ body {
 
 h1 {
     text-align: center;
-    color: #2c2c2c;
+    color: var(--text-primary);
     margin-bottom: 20px;
     font-size: 1.6em;
     font-weight: 300;
@@ -103,7 +145,7 @@ h1 {
     transition: all 0.2s ease;
     opacity: 0.5;
     border: 1px solid transparent;
-    color: #2c2c2c;
+    color: var(--text-primary);
     font-size: 0.9em;
     font-weight: 400;
 }
@@ -132,7 +174,7 @@ h1 {
 .pieces-remaining {
     margin-left: auto;
     font-weight: 400;
-    color: #666;
+    color: var(--text-secondary);
     font-size: 0.9em;
     display: flex;
     align-items: center;
@@ -142,7 +184,7 @@ h1 {
 .pieces-remaining span:last-child {
     font-weight: 600;
     font-size: 1.3em;
-    color: #2c2c2c;
+    color: var(--text-primary);
     min-width: 20px;
     text-align: center;
 }
@@ -159,23 +201,23 @@ h1 {
 .game-status > div {
     margin: 6px 0;
     font-size: 0.9em;
-    color: #2c2c2c;
+    color: var(--text-primary);
     font-weight: 400;
 }
 
 #current-phase {
     font-weight: 500;
-    color: #2c2c2c;
+    color: var(--text-primary);
 }
 
 #current-turn {
     font-weight: 500;
-    color: #2c2c2c;
+    color: var(--text-primary);
 }
 
 #current-action {
     font-weight: 500;
-    color: #666;
+    color: var(--text-secondary);
 }
 
 .board-container {
@@ -183,10 +225,10 @@ h1 {
     display: flex;
     justify-content: center;
     margin: 20px 0;
-    background: #f2f2ed;
+    background: var(--bg-tertiary);
     border-radius: 4px;
     padding: 20px 16px;
-    border: 1px solid #d8d8d8;
+    border: 1px solid var(--border-primary);
 }
 
 #game-board {
@@ -196,14 +238,14 @@ h1 {
 }
 
 .board-line {
-    stroke: #2c2c2c;
+    stroke: var(--board-line);
     stroke-width: 2;
     stroke-linecap: round;
 }
 
 .position {
     fill: #fefefe;
-    stroke: #2c2c2c;
+    stroke: var(--board-line);
     stroke-width: 2;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -219,8 +261,8 @@ h1 {
 }
 
 .position.white {
-    fill: #d4d4d0;
-    stroke: #2c2c2c;
+    fill: var(--piece-white);
+    stroke: var(--board-line);
     stroke-width: 3;
 }
 
@@ -290,7 +332,7 @@ h1 {
         filter: drop-shadow(0 0 12px rgba(139, 115, 85, 0.8));
     }
     100% {
-        stroke: #2c2c2c;
+        stroke: var(--board-line);
         stroke-width: 3;
         filter: none;
     }
@@ -325,7 +367,7 @@ h1 {
         fill: rgba(139, 115, 85, 0.2);
     }
     100% {
-        stroke: #2c2c2c;
+        stroke: var(--board-line);
         stroke-width: 2;
         fill: #fefefe;
     }
@@ -400,7 +442,7 @@ button {
     transition: all 0.2s ease;
     font-weight: 400;
     background: #ffffff;
-    color: #2c2c2c;
+    color: var(--text-primary);
     letter-spacing: 0.3px;
 }
 
@@ -411,7 +453,7 @@ button:hover {
 
 #reset-btn {
     background: #ffffff;
-    color: #2c2c2c;
+    color: var(--text-primary);
     border: 1px solid #2c2c2c;
 }
 
@@ -422,14 +464,14 @@ button:hover {
 
 #rules-btn {
     background: #fafafa;
-    color: #2c2c2c;
+    color: var(--text-primary);
     border: 1px solid #e8e8e8;
 }
 
 #rules-btn:hover {
     background: #2c2c2c;
     color: #ffffff;
-    border-color: #2c2c2c;
+    border-color: var(--text-primary);
 }
 
 #new-game-btn {
@@ -465,16 +507,17 @@ button:hover {
 }
 
 .modal-content {
-    background: #ffffff;
+    background: var(--bg-secondary);
     margin: 5% auto;
     padding: 48px;
     border-radius: 8px;
     max-width: 650px;
+    transition: background-color 0.3s ease;
     width: 90%;
     position: relative;
     animation: slideDown 0.3s ease;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
-    color: #2c2c2c;
+    color: var(--text-primary);
 }
 
 @keyframes slideDown {
@@ -489,7 +532,7 @@ button:hover {
 }
 
 .close {
-    color: #999;
+    color: var(--text-tertiary);
     float: right;
     font-size: 28px;
     font-weight: 300;
@@ -499,11 +542,11 @@ button:hover {
 }
 
 .close:hover {
-    color: #2c2c2c;
+    color: var(--text-primary);
 }
 
 .modal-content h2 {
-    color: #2c2c2c;
+    color: var(--text-primary);
     margin-bottom: 24px;
     font-size: 1.8em;
     font-weight: 300;
@@ -515,7 +558,7 @@ button:hover {
 }
 
 .rules-text h3 {
-    color: #2c2c2c;
+    color: var(--text-primary);
     margin-top: 24px;
     margin-bottom: 12px;
     font-size: 1.2em;
@@ -523,13 +566,13 @@ button:hover {
 }
 
 .rules-text p {
-    color: #666;
+    color: var(--text-secondary);
     margin-bottom: 12px;
 }
 
 .rules-text ul {
     margin-left: 24px;
-    color: #666;
+    color: var(--text-secondary);
 }
 
 .rules-text li {
@@ -541,7 +584,7 @@ button:hover {
 }
 
 #game-over-modal h2 {
-    color: #2c2c2c;
+    color: var(--text-primary);
     margin-bottom: 24px;
     font-size: 2em;
     font-weight: 300;
@@ -550,7 +593,7 @@ button:hover {
 #winner-text {
     font-size: 1.3em;
     margin: 24px 0;
-    color: #2c2c2c;
+    color: var(--text-primary);
     font-weight: 400;
 }
 
@@ -565,7 +608,7 @@ button:hover {
     padding: 18px 32px;
     font-size: 1.1em;
     background: #ffffff;
-    color: #2c2c2c;
+    color: var(--text-primary);
     border: 1px solid #2c2c2c;
     border-radius: 4px;
     cursor: pointer;
@@ -586,7 +629,7 @@ button:hover {
 }
 
 .difficulty-select h3 {
-    color: #2c2c2c;
+    color: var(--text-primary);
     margin-bottom: 20px;
     text-align: center;
     font-weight: 400;
@@ -602,7 +645,7 @@ button:hover {
     padding: 10px 24px;
     font-size: 0.9em;
     background: #fafafa;
-    color: #2c2c2c;
+    color: var(--text-primary);
     border: 1px solid #e8e8e8;
     border-radius: 4px;
     cursor: pointer;
@@ -613,13 +656,13 @@ button:hover {
 
 .difficulty-btn:hover {
     background: #f0f0f0;
-    border-color: #2c2c2c;
+    border-color: var(--text-primary);
 }
 
 .difficulty-btn.active {
     background: #2c2c2c;
     color: #ffffff;
-    border-color: #2c2c2c;
+    border-color: var(--text-primary);
 }
 
 /* Settings */
@@ -637,14 +680,14 @@ button:hover {
 
 .setting-label strong {
     display: block;
-    color: #2c2c2c;
+    color: var(--text-primary);
     font-size: 1em;
     margin-bottom: 8px;
     font-weight: 500;
 }
 
 .setting-description {
-    color: #666;
+    color: var(--text-secondary);
     font-size: 0.9em;
     line-height: 1.5;
 }
@@ -696,7 +739,7 @@ button:hover {
 }
 
 input:checked + .slider {
-    background-color: #2c2c2c;
+    background-color: var(--text-primary);
 }
 
 input:checked + .slider:before {
@@ -711,12 +754,12 @@ input:checked + .slider:before {
 
 .toggle-label {
     font-size: 0.9em;
-    color: #999;
+    color: var(--text-tertiary);
     transition: all 0.2s;
 }
 
 .toggle-label.active {
-    color: #2c2c2c;
+    color: var(--text-primary);
     font-weight: 500;
 }
 
@@ -734,21 +777,21 @@ input:checked + .slider:before {
 .stat-item {
     text-align: center;
     padding: 20px;
-    background: #f8f8f8;
+    background: var(--bg-quaternary);
     border-radius: 8px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-secondary);
 }
 
 .stat-value {
     font-size: 2em;
     font-weight: bold;
-    color: #2c2c2c;
+    color: var(--text-primary);
     margin-bottom: 8px;
 }
 
 .stat-label {
     font-size: 0.9em;
-    color: #666;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -765,24 +808,24 @@ input:checked + .slider:before {
 
 .no-games {
     text-align: center;
-    color: #999;
+    color: var(--text-tertiary);
     padding: 40px 20px;
     font-style: italic;
 }
 
 .game-record {
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-secondary);
     border-radius: 8px;
     padding: 16px;
     margin-bottom: 12px;
-    background: #f8f8f8;
+    background: var(--bg-quaternary);
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .game-record:hover {
     background: #f0f0f0;
-    border-color: #2c2c2c;
+    border-color: var(--text-primary);
 }
 
 .game-record-header {
@@ -794,7 +837,7 @@ input:checked + .slider:before {
 
 .game-date {
     font-weight: 500;
-    color: #2c2c2c;
+    color: var(--text-primary);
 }
 
 .game-result {
@@ -810,20 +853,20 @@ input:checked + .slider:before {
 }
 
 .game-result.loss {
-    background: #f4d6d6;
-    color: #8b4545;
+    background: var(--removal-bg);
+    color: var(--removal-text);
 }
 
 .game-result.draw {
     background: #e8e8e8;
-    color: #666;
+    color: var(--text-secondary);
 }
 
 .game-details {
     display: flex;
     gap: 16px;
     font-size: 0.9em;
-    color: #666;
+    color: var(--text-secondary);
 }
 
 .game-detail-item {
@@ -853,7 +896,7 @@ input:checked + .slider:before {
     width: 50px;
     height: 50px;
     border: 4px solid #e0e0e0;
-    border-top-color: #2c2c2c;
+    border-top-color: var(--text-primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -866,7 +909,7 @@ input:checked + .slider:before {
 
 .thinking-text {
     font-size: 1.1em;
-    color: #2c2c2c;
+    color: var(--text-primary);
     font-weight: 500;
 }
 
@@ -876,11 +919,11 @@ input:checked + .slider:before {
     top: 20px;
     left: 50%;
     transform: translateX(-50%);
-    background: #f4d6d6;
-    color: #8b4545;
+    background: var(--removal-bg);
+    color: var(--removal-text);
     padding: 16px 32px;
     border-radius: 4px;
-    border: 2px solid #c77575;
+    border: 2px solid var(--removal-border);
     font-weight: 500;
     font-size: 1.1em;
     z-index: 999;
@@ -992,8 +1035,8 @@ input:checked + .slider:before {
     padding: 6px 10px;
     font-size: 1em;
     background: #ffffff;
-    color: #2c2c2c;
-    border: 1px solid #d8d8d8;
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s;
@@ -1003,7 +1046,7 @@ input:checked + .slider:before {
 .playback-btn:hover:not(:disabled) {
     background: #2c2c2c;
     color: #ffffff;
-    border-color: #2c2c2c;
+    border-color: var(--text-primary);
 }
 
 .playback-btn:disabled {
@@ -1013,7 +1056,7 @@ input:checked + .slider:before {
 
 .move-counter {
     font-size: 0.9em;
-    color: #666;
+    color: var(--text-secondary);
     min-width: 100px;
     text-align: center;
 }

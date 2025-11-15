@@ -22,6 +22,7 @@ const gameState = {
     playbackIndex: -1, // Current position in playback (-1 = live game)
     removeFromHand: true, // Setting: true = remove from hand during placement, false = remove from board
     soundEnabled: true, // Setting: enable/disable sound effects
+    darkTheme: false, // Setting: dark theme enabled
     stateHistory: [], // Track game state snapshots for undo/redo
     historyIndex: -1, // Current position in state history
     currentGameRecord: null, // Current game being played
@@ -216,6 +217,13 @@ function initGame() {
     const soundToggle = document.getElementById('sound-toggle');
     soundToggle.checked = gameState.soundEnabled;
     document.getElementById('sound-toggle').addEventListener('change', handleSoundToggle);
+
+    const themeToggle = document.getElementById('theme-toggle');
+    themeToggle.checked = gameState.darkTheme;
+    document.getElementById('theme-toggle').addEventListener('change', handleThemeToggle);
+
+    // Apply theme on load
+    applyTheme();
 
     document.getElementById('close-settings').addEventListener('click', hideSettings);
     document.getElementById('close-stats').addEventListener('click', hideStats);
@@ -1652,6 +1660,33 @@ function handleSoundToggle(e) {
     saveStats();
 }
 
+function handleThemeToggle(e) {
+    gameState.darkTheme = e.target.checked;
+
+    // Update label styling
+    const lightLabel = document.getElementById('theme-light');
+    const darkLabel = document.getElementById('theme-dark');
+
+    if (gameState.darkTheme) {
+        lightLabel.classList.remove('active');
+        darkLabel.classList.add('active');
+    } else {
+        lightLabel.classList.add('active');
+        darkLabel.classList.remove('active');
+    }
+
+    applyTheme();
+    saveStats();
+}
+
+function applyTheme() {
+    if (gameState.darkTheme) {
+        document.body.classList.add('dark-theme');
+    } else {
+        document.body.classList.remove('dark-theme');
+    }
+}
+
 function showStats() {
     updateStatsDisplay();
     document.getElementById('stats-modal').style.display = 'block';
@@ -2084,7 +2119,8 @@ function saveStats() {
         localStorage.setItem('myllyStats', JSON.stringify(gameState.stats));
         localStorage.setItem('myllySettings', JSON.stringify({
             soundEnabled: gameState.soundEnabled,
-            removeFromHand: gameState.removeFromHand
+            removeFromHand: gameState.removeFromHand,
+            darkTheme: gameState.darkTheme
         }));
     } catch (e) {
         console.error('Failed to save stats:', e);
@@ -2103,6 +2139,7 @@ function loadStats() {
             const settings = JSON.parse(savedSettings);
             gameState.soundEnabled = settings.soundEnabled ?? true;
             gameState.removeFromHand = settings.removeFromHand ?? true;
+            gameState.darkTheme = settings.darkTheme ?? false;
         }
 
         // Load saved games
