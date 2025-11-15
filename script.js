@@ -1465,6 +1465,12 @@ function updateDisplay() {
     }
     document.getElementById('current-action').textContent = actionText;
 
+    // Show/hide AI thinking indicator
+    const aiIndicator = document.getElementById('ai-thinking-indicator');
+    if (aiIndicator) {
+        aiIndicator.style.display = gameState.isAIThinking ? 'flex' : 'none';
+    }
+
     // Show/hide removal indicator
     if (gameState.phase === 'removal' && gameState.currentPlayer === 'white' && !gameState.isAIThinking) {
         showRemovalIndicator();
