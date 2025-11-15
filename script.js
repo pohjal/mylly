@@ -82,6 +82,19 @@ const mills = [
 // Strategic positions (corners and intersections are more valuable)
 const strategicPositions = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23];
 
+// Position coordinates on the SVG board (700x700 viewBox)
+const positionCoordinates = [
+    {x: 50, y: 50}, {x: 350, y: 50}, {x: 650, y: 50},
+    {x: 650, y: 350}, {x: 650, y: 650}, {x: 350, y: 650},
+    {x: 50, y: 650}, {x: 50, y: 350},
+    {x: 150, y: 150}, {x: 350, y: 150}, {x: 550, y: 150},
+    {x: 550, y: 350}, {x: 550, y: 550}, {x: 350, y: 550},
+    {x: 150, y: 550}, {x: 150, y: 350},
+    {x: 250, y: 250}, {x: 350, y: 250}, {x: 450, y: 250},
+    {x: 450, y: 350}, {x: 450, y: 450}, {x: 350, y: 450},
+    {x: 250, y: 450}, {x: 250, y: 350}
+];
+
 // ==================== AUDIO SYSTEM ====================
 
 // Audio context for sound effects
@@ -187,6 +200,87 @@ function playSound(type) {
             });
             break;
     }
+}
+
+// ==================== ANIMATION SYSTEM ====================
+
+function createParticles(posIndex, type = 'mill') {
+    const container = document.getElementById('particles-container');
+    if (!container) return;
+
+    const board = document.getElementById('game-board');
+    const boardRect = board.getBoundingClientRect();
+
+    // Get position in SVG coordinates
+    const svgPos = positionCoordinates[posIndex];
+
+    // Convert to percentage of board
+    const xPercent = (svgPos.x / 700) * 100;
+    const yPercent = (svgPos.y / 700) * 100;
+
+    // Create 12 particles
+    const particleCount = 12;
+    for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = `particle ${type}`;
+
+        // Random offset for spreading effect
+        const angle = (i / particleCount) * Math.PI * 2;
+        const spread = 20 + Math.random() * 20;
+        const xOffset = Math.cos(angle) * spread;
+        const yOffset = Math.sin(angle) * spread;
+
+        particle.style.left = `calc(${xPercent}% + ${xOffset}px)`;
+        particle.style.top = `calc(${yPercent}% + ${yOffset}px)`;
+
+        // Random animation duration
+        particle.style.animationDuration = (0.8 + Math.random() * 0.4) + 's';
+
+        container.appendChild(particle);
+
+        // Remove after animation
+        setTimeout(() => {
+            if (particle.parentNode) {
+                particle.parentNode.removeChild(particle);
+            }
+        }, 1200);
+    }
+}
+
+function animatePieceSlide(fromPos, toPos, player) {
+    const board = document.getElementById('game-board');
+    if (!board) return;
+
+    const boardRect = board.getBoundingClientRect();
+    const fromCoords = positionCoordinates[fromPos];
+    const toCoords = positionCoordinates[toPos];
+
+    // Convert SVG coordinates to screen coordinates
+    const fromX = (fromCoords.x / 700) * boardRect.width + boardRect.left;
+    const fromY = (fromCoords.y / 700) * boardRect.height + boardRect.top;
+    const toX = (toCoords.x / 700) * boardRect.width + boardRect.left;
+    const toY = (toCoords.y / 700) * boardRect.height + boardRect.top;
+
+    // Create sliding piece element
+    const piece = document.createElement('div');
+    piece.className = `sliding-piece ${player}`;
+    piece.style.left = fromX + 'px';
+    piece.style.top = fromY + 'px';
+
+    document.body.appendChild(piece);
+
+    // Trigger slide animation
+    setTimeout(() => {
+        piece.style.left = toX + 'px';
+        piece.style.top = toY + 'px';
+    }, 10);
+
+    // Remove after animation
+    setTimeout(() => {
+        if (piece.parentNode) {
+            piece.parentNode.removeChild(piece);
+        }
+    }, 450);
 }
 
 // Initialize game
@@ -352,8 +446,9 @@ function handlePlacement(posIndex) {
     if (isInMill(posIndex, gameState.currentPlayer)) {
         gameState.millFormed = true;
 
-        // Play mill sound
+        // Play mill sound and create particles
         playSound('mill');
+        createParticles(posIndex, 'mill');
 
         // Check if we should remove from hand (placement phase only)
         const inPlacementPhase = (gameState.whitePlaced < 9 || gameState.blackPlaced < 9);
@@ -435,6 +530,10 @@ function handleMovement(posIndex) {
 
             // Move piece
             const movedFrom = gameState.selectedPosition;
+
+            // Animate the sliding piece
+            animatePieceSlide(movedFrom, posIndex, gameState.currentPlayer);
+
             gameState.board[posIndex] = gameState.currentPlayer;
             gameState.board[movedFrom] = null;
             gameState.selectedPosition = null;
@@ -468,8 +567,9 @@ function handleMovement(posIndex) {
                 gameState.millFormed = true;
                 gameState.phase = 'removal';
 
-                // Play mill sound
+                // Play mill sound and create particles
                 playSound('mill');
+                createParticles(posIndex, 'mill');
 
                 updateDisplay();
 
@@ -525,8 +625,9 @@ function handleRemoval(posIndex) {
     gameState.board[posIndex] = null;
     gameState.pieceCount[opponent]--;
 
-    // Play sound effect
+    // Play sound effect and create particles
     playSound('remove');
+    createParticles(posIndex, 'remove');
 
     // Record move
     recordMove('remove', posIndex);
