@@ -157,7 +157,7 @@ function handlePlacement(posIndex) {
 
         // AI handles removal
         if (gameState.gameMode === 'pva' && gameState.currentPlayer === 'black') {
-            setTimeout(() => aiRemovePiece(), 500);
+            setTimeout(() => aiRemovePiece(), 1200);
         }
     } else {
         switchPlayer();
@@ -170,7 +170,7 @@ function handlePlacement(posIndex) {
 
         // AI makes next move
         if (gameState.gameMode === 'pva' && gameState.currentPlayer === 'black') {
-            setTimeout(() => aiMakeMove(), 500);
+            setTimeout(() => aiMakeMove(), 800);
         }
     }
 }
@@ -214,7 +214,7 @@ function handleMovement(posIndex) {
 
                 // AI handles removal
                 if (gameState.gameMode === 'pva' && gameState.currentPlayer === 'black') {
-                    setTimeout(() => aiRemovePiece(), 500);
+                    setTimeout(() => aiRemovePiece(), 1200);
                 }
             } else {
                 switchPlayer();
@@ -222,7 +222,7 @@ function handleMovement(posIndex) {
 
                 // AI makes next move
                 if (gameState.gameMode === 'pva' && gameState.currentPlayer === 'black') {
-                    setTimeout(() => aiMakeMove(), 500);
+                    setTimeout(() => aiMakeMove(), 800);
                 }
             }
         } else {
@@ -275,7 +275,27 @@ function handleRemoval(posIndex) {
 
     // AI makes next move
     if (gameState.gameMode === 'pva' && gameState.currentPlayer === 'black') {
-        setTimeout(() => aiMakeMove(), 500);
+        setTimeout(() => aiMakeMove(), 800);
+    }
+}
+
+// Show/hide removal indicator
+function showRemovalIndicator() {
+    let indicator = document.getElementById('removal-indicator');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'removal-indicator';
+        indicator.className = 'removal-indicator';
+        document.body.appendChild(indicator);
+    }
+    indicator.textContent = 'Click an opponent piece to remove it';
+    indicator.style.display = 'block';
+}
+
+function hideRemovalIndicator() {
+    const indicator = document.getElementById('removal-indicator');
+    if (indicator) {
+        indicator.style.display = 'none';
     }
 }
 
@@ -684,6 +704,13 @@ function updateDisplay() {
         actionText = 'Select destination';
     }
     document.getElementById('current-action').textContent = actionText;
+
+    // Show/hide removal indicator
+    if (gameState.phase === 'removal' && gameState.currentPlayer === 'white' && !gameState.isAIThinking) {
+        showRemovalIndicator();
+    } else {
+        hideRemovalIndicator();
+    }
 
     // Update board visualization
     const positions = document.querySelectorAll('.position');
