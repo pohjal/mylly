@@ -106,8 +106,11 @@
         </div>
 
         <div class="controls">
+            <button id="undo-btn" disabled>Undo</button>
+            <button id="redo-btn" disabled>Redo</button>
             <button id="reset-btn">New Game</button>
             <button id="settings-btn">Settings</button>
+            <button id="stats-btn">Statistics</button>
             <button id="rules-btn">Rules</button>
         </div>
 
@@ -167,11 +170,67 @@
             </div>
         </div>
 
+        <div id="stats-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="close-stats">&times;</span>
+                <h2>Statistics</h2>
+                <div class="stats-content">
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-games">0</div>
+                            <div class="stat-label">Games Played</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-wins">0</div>
+                            <div class="stat-label">Wins</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-losses">0</div>
+                            <div class="stat-label">Losses</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-draws">0</div>
+                            <div class="stat-label">Draws</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-winrate">0%</div>
+                            <div class="stat-label">Win Rate</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-streak">0</div>
+                            <div class="stat-label">Current Streak</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-best-streak">0</div>
+                            <div class="stat-label">Best Streak</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="settings-modal" class="modal">
             <div class="modal-content">
                 <span class="close" id="close-settings">&times;</span>
                 <h2>Settings</h2>
                 <div class="settings-content">
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <strong>Sound Effects</strong>
+                            <p class="setting-description">Enable or disable sound effects during gameplay.</p>
+                        </div>
+                        <div class="setting-control">
+                            <label class="switch">
+                                <input type="checkbox" id="sound-toggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <div class="toggle-labels">
+                                <span class="toggle-label" id="sound-off">Off</span>
+                                <span class="toggle-label active" id="sound-on">On</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="setting-item">
                         <div class="setting-label">
                             <strong>Mill Removal During Placement</strong>

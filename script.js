@@ -20,7 +20,20 @@ const gameState = {
     moveHistory: [], // Track all moves for playback
     isPlaybackMode: false, // Whether we're in playback mode
     playbackIndex: -1, // Current position in playback (-1 = live game)
-    removeFromHand: true // Setting: true = remove from hand during placement, false = remove from board
+    removeFromHand: true, // Setting: true = remove from hand during placement, false = remove from board
+    soundEnabled: true, // Setting: enable/disable sound effects
+    stateHistory: [], // Track game state snapshots for undo/redo
+    historyIndex: -1, // Current position in state history
+    currentGameRecord: null, // Current game being played
+    savedGames: [], // List of saved game records
+    stats: {
+        gamesPlayed: 0,
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        currentStreak: 0,
+        bestStreak: 0
+    }
 };
 
 // Define adjacencies for each position
@@ -66,23 +79,142 @@ const mills = [
 // Strategic positions (corners and intersections are more valuable)
 const strategicPositions = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23];
 
+// ==================== AUDIO SYSTEM ====================
+
+// Audio context for sound effects
+let audioContext;
+
+function initAudio() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+}
+
+function playSound(type) {
+    if (!gameState.soundEnabled || !audioContext) return;
+
+    const now = audioContext.currentTime;
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    switch (type) {
+        case 'place':
+            // Short click sound
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.15, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            oscillator.start(now);
+            oscillator.stop(now + 0.1);
+            break;
+
+        case 'mill':
+            // Pleasant chime for forming a mill
+            oscillator.frequency.value = 523.25; // C5
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.2, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+            oscillator.start(now);
+            oscillator.stop(now + 0.4);
+
+            // Add second note for harmony
+            setTimeout(() => {
+                const osc2 = audioContext.createOscillator();
+                const gain2 = audioContext.createGain();
+                osc2.connect(gain2);
+                gain2.connect(audioContext.destination);
+                osc2.frequency.value = 659.25; // E5
+                osc2.type = 'sine';
+                const t = audioContext.currentTime;
+                gain2.gain.setValueAtTime(0.15, t);
+                gain2.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+                osc2.start(t);
+                osc2.stop(t + 0.4);
+            }, 100);
+            break;
+
+        case 'remove':
+            // Lower sound for piece removal
+            oscillator.frequency.value = 200;
+            oscillator.type = 'triangle';
+            gainNode.gain.setValueAtTime(0.15, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            oscillator.start(now);
+            oscillator.stop(now + 0.2);
+            break;
+
+        case 'win':
+            // Victory fanfare
+            [523.25, 659.25, 783.99].forEach((freq, i) => {
+                setTimeout(() => {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+                    osc.frequency.value = freq;
+                    osc.type = 'sine';
+                    const t = audioContext.currentTime;
+                    gain.gain.setValueAtTime(0.2, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+                    osc.start(t);
+                    osc.stop(t + 0.5);
+                }, i * 150);
+            });
+            break;
+
+        case 'lose':
+            // Descending notes for loss
+            [392, 349.23, 293.66].forEach((freq, i) => {
+                setTimeout(() => {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+                    osc.frequency.value = freq;
+                    osc.type = 'triangle';
+                    const t = audioContext.currentTime;
+                    gain.gain.setValueAtTime(0.15, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                    osc.start(t);
+                    osc.stop(t + 0.3);
+                }, i * 120);
+            });
+            break;
+    }
+}
+
 // Initialize game
 function initGame() {
+    initAudio();
+    loadStats(); // Load saved stats and settings
+
     const positions = document.querySelectorAll('.position');
     positions.forEach(pos => {
         pos.addEventListener('click', handlePositionClick);
     });
 
+    document.getElementById('undo-btn').addEventListener('click', undoMove);
+    document.getElementById('redo-btn').addEventListener('click', redoMove);
     document.getElementById('reset-btn').addEventListener('click', showGameModeModal);
     document.getElementById('settings-btn').addEventListener('click', showSettings);
+    document.getElementById('stats-btn').addEventListener('click', showStats);
     document.getElementById('rules-btn').addEventListener('click', showRules);
     document.getElementById('new-game-btn').addEventListener('click', showGameModeModal);
 
-    // Settings toggle
+    // Settings toggles
     const removalToggle = document.getElementById('removal-variant-toggle');
     removalToggle.checked = gameState.removeFromHand;
     document.getElementById('removal-variant-toggle').addEventListener('change', handleRemovalVariantToggle);
+
+    const soundToggle = document.getElementById('sound-toggle');
+    soundToggle.checked = gameState.soundEnabled;
+    document.getElementById('sound-toggle').addEventListener('change', handleSoundToggle);
+
     document.getElementById('close-settings').addEventListener('click', hideSettings);
+    document.getElementById('close-stats').addEventListener('click', hideStats);
 
     // Game mode selection
     document.getElementById('pvp-btn').addEventListener('click', () => startGame('pvp'));
@@ -109,11 +241,15 @@ function initGame() {
     window.addEventListener('click', (e) => {
         const rulesModal = document.getElementById('rules-modal');
         const settingsModal = document.getElementById('settings-modal');
+        const statsModal = document.getElementById('stats-modal');
         if (e.target === rulesModal) {
             hideRules();
         }
         if (e.target === settingsModal) {
             hideSettings();
+        }
+        if (e.target === statsModal) {
+            hideStats();
         }
     });
 
@@ -163,9 +299,15 @@ function handlePlacement(posIndex) {
         return;
     }
 
+    // Save state before making the move
+    saveState();
+
     // Place piece
     gameState.board[posIndex] = gameState.currentPlayer;
     gameState.justPlaced = posIndex;
+
+    // Play sound effect
+    playSound('place');
 
     // Clear animation after it completes
     setTimeout(() => {
@@ -192,6 +334,9 @@ function handlePlacement(posIndex) {
     // Check for mill
     if (isInMill(posIndex, gameState.currentPlayer)) {
         gameState.millFormed = true;
+
+        // Play mill sound
+        playSound('mill');
 
         // Check if we should remove from hand (placement phase only)
         const inPlacementPhase = (gameState.whitePlaced < 9 || gameState.blackPlaced < 9);
@@ -268,11 +413,17 @@ function handleMovement(posIndex) {
         const isEmpty = gameState.board[posIndex] === null;
 
         if (isEmpty && (canFly || isAdjacent)) {
+            // Save state before making the move
+            saveState();
+
             // Move piece
             const movedFrom = gameState.selectedPosition;
             gameState.board[posIndex] = gameState.currentPlayer;
             gameState.board[movedFrom] = null;
             gameState.selectedPosition = null;
+
+            // Play sound effect
+            playSound('place');
 
             // Set animation states
             gameState.justPlaced = posIndex;
@@ -299,6 +450,10 @@ function handleMovement(posIndex) {
             if (isInMill(posIndex, gameState.currentPlayer)) {
                 gameState.millFormed = true;
                 gameState.phase = 'removal';
+
+                // Play mill sound
+                playSound('mill');
+
                 updateDisplay();
 
                 // AI handles removal
@@ -346,9 +501,15 @@ function handleRemoval(posIndex) {
         }
     }
 
+    // Save state before making the move
+    saveState();
+
     // Remove piece
     gameState.board[posIndex] = null;
     gameState.pieceCount[opponent]--;
+
+    // Play sound effect
+    playSound('remove');
 
     // Record move
     recordMove('remove', posIndex);
@@ -387,6 +548,18 @@ function recordMove(type, position, fromPos = null) {
     };
 
     gameState.moveHistory.push(move);
+
+    // Also save to game record
+    if (gameState.currentGameRecord) {
+        gameState.currentGameRecord.moves.push({
+            type: type,
+            player: gameState.currentPlayer,
+            position: position,
+            from: fromPos,
+            moveNumber: move.moveNumber
+        });
+    }
+
     showPlaybackControls();
     updateMoveCounter();
 }
@@ -1358,6 +1531,9 @@ function updateDisplay() {
             }
         }
     });
+
+    // Update undo/redo button states
+    updateUndoRedoButtons();
 }
 
 function resetGame() {
@@ -1379,10 +1555,26 @@ function resetGame() {
     gameState.moveHistory = [];
     gameState.isPlaybackMode = false;
     gameState.playbackIndex = -1;
+    gameState.stateHistory = [];
+    gameState.historyIndex = -1;
+
+    // Initialize new game record
+    gameState.currentGameRecord = {
+        id: Date.now(),
+        date: new Date().toISOString(),
+        gameMode: gameState.gameMode,
+        aiDifficulty: gameState.aiDifficulty,
+        moves: [],
+        winner: null,
+        endTime: null
+    };
 
     document.getElementById('game-over-modal').style.display = 'none';
     showPlaybackControls();
     updateDisplay();
+
+    // Save initial state
+    saveState();
 }
 
 function showRules() {
@@ -1415,13 +1607,248 @@ function handleRemovalVariantToggle(e) {
         fromBoardLabel.classList.add('active');
         fromHandLabel.classList.remove('active');
     }
+
+    saveStats();
+}
+
+function handleSoundToggle(e) {
+    gameState.soundEnabled = e.target.checked;
+
+    // Update label styling
+    const soundOffLabel = document.getElementById('sound-off');
+    const soundOnLabel = document.getElementById('sound-on');
+
+    if (gameState.soundEnabled) {
+        soundOffLabel.classList.remove('active');
+        soundOnLabel.classList.add('active');
+    } else {
+        soundOffLabel.classList.add('active');
+        soundOnLabel.classList.remove('active');
+    }
+
+    saveStats();
+}
+
+function showStats() {
+    updateStatsDisplay();
+    document.getElementById('stats-modal').style.display = 'block';
+}
+
+function hideStats() {
+    document.getElementById('stats-modal').style.display = 'none';
+}
+
+function updateStatsDisplay() {
+    const stats = gameState.stats;
+    document.getElementById('stat-games').textContent = stats.gamesPlayed;
+    document.getElementById('stat-wins').textContent = stats.wins;
+    document.getElementById('stat-losses').textContent = stats.losses;
+    document.getElementById('stat-draws').textContent = stats.draws;
+
+    const winRate = stats.gamesPlayed > 0
+        ? Math.round((stats.wins / stats.gamesPlayed) * 100)
+        : 0;
+    document.getElementById('stat-winrate').textContent = winRate + '%';
+
+    document.getElementById('stat-streak').textContent = stats.currentStreak;
+    document.getElementById('stat-best-streak').textContent = stats.bestStreak;
+}
+
+// ==================== UNDO/REDO ====================
+
+function saveState() {
+    // Don't save state during playback or AI thinking
+    if (gameState.isPlaybackMode || gameState.isAIThinking) return;
+
+    // Create a snapshot of the current state
+    const snapshot = {
+        currentPlayer: gameState.currentPlayer,
+        phase: gameState.phase,
+        board: [...gameState.board],
+        whitePieces: gameState.whitePieces,
+        blackPieces: gameState.blackPieces,
+        whitePlaced: gameState.whitePlaced,
+        blackPlaced: gameState.blackPlaced,
+        piecesToPlace: { ...gameState.piecesToPlace },
+        pieceCount: { ...gameState.pieceCount },
+        millFormed: gameState.millFormed
+    };
+
+    // Remove any states after current index (for redo history)
+    gameState.stateHistory = gameState.stateHistory.slice(0, gameState.historyIndex + 1);
+
+    // Add the new state
+    gameState.stateHistory.push(snapshot);
+    gameState.historyIndex++;
+
+    // Keep history limited to last 50 states
+    if (gameState.stateHistory.length > 50) {
+        gameState.stateHistory.shift();
+        gameState.historyIndex--;
+    }
+
+    updateUndoRedoButtons();
+}
+
+function restoreState(snapshot) {
+    gameState.currentPlayer = snapshot.currentPlayer;
+    gameState.phase = snapshot.phase;
+    gameState.board = [...snapshot.board];
+    gameState.whitePieces = snapshot.whitePieces;
+    gameState.blackPieces = snapshot.blackPieces;
+    gameState.whitePlaced = snapshot.whitePlaced;
+    gameState.blackPlaced = snapshot.blackPlaced;
+    gameState.piecesToPlace = { ...snapshot.piecesToPlace };
+    gameState.pieceCount = { ...snapshot.pieceCount };
+    gameState.millFormed = snapshot.millFormed;
+    gameState.selectedPosition = null;
+    gameState.lastAIMove = null;
+    gameState.justPlaced = null;
+    gameState.moveFrom = null;
+
+    updateDisplay();
+    updateUndoRedoButtons();
+}
+
+function undoMove() {
+    // Can't undo if at the beginning or during AI turn or in playback
+    if (gameState.historyIndex <= 0 || gameState.isAIThinking || gameState.isPlaybackMode) return;
+
+    // In PvA mode, undo twice to go back to player's last move
+    if (gameState.gameMode === 'pva' && gameState.historyIndex >= 2) {
+        gameState.historyIndex -= 2;
+    } else {
+        gameState.historyIndex--;
+    }
+
+    const snapshot = gameState.stateHistory[gameState.historyIndex];
+    restoreState(snapshot);
+}
+
+function redoMove() {
+    // Can't redo if at the end or during AI turn or in playback
+    if (gameState.historyIndex >= gameState.stateHistory.length - 1 ||
+        gameState.isAIThinking || gameState.isPlaybackMode) return;
+
+    // In PvA mode, redo twice to go forward to player's next move
+    if (gameState.gameMode === 'pva' && gameState.historyIndex < gameState.stateHistory.length - 2) {
+        gameState.historyIndex += 2;
+    } else {
+        gameState.historyIndex++;
+    }
+
+    const snapshot = gameState.stateHistory[gameState.historyIndex];
+    restoreState(snapshot);
+}
+
+function updateUndoRedoButtons() {
+    const undoBtn = document.getElementById('undo-btn');
+    const redoBtn = document.getElementById('redo-btn');
+
+    // Disable undo/redo during playback or AI thinking
+    if (gameState.isPlaybackMode || gameState.isAIThinking) {
+        undoBtn.disabled = true;
+        redoBtn.disabled = true;
+        return;
+    }
+
+    // Undo is enabled if we have history
+    undoBtn.disabled = gameState.historyIndex <= 0;
+
+    // Redo is enabled if we're not at the end
+    redoBtn.disabled = gameState.historyIndex >= gameState.stateHistory.length - 1;
 }
 
 function showGameOver(winner) {
     const winnerText = winner === 'white' ? 'White wins!' :
                       (gameState.gameMode === 'pva' ? 'AI wins!' : 'Black wins!');
     document.getElementById('winner-text').textContent = winnerText;
+
+    // Play win/lose sound
+    if (gameState.gameMode === 'pva') {
+        // In AI mode, white is player
+        playSound(winner === 'white' ? 'win' : 'lose');
+    } else {
+        // In PvP mode, just play win sound
+        playSound('win');
+    }
+
+    // Update statistics
+    gameState.stats.gamesPlayed++;
+    if (gameState.gameMode === 'pva') {
+        if (winner === 'white') {
+            gameState.stats.wins++;
+            gameState.stats.currentStreak++;
+            if (gameState.stats.currentStreak > gameState.stats.bestStreak) {
+                gameState.stats.bestStreak = gameState.stats.currentStreak;
+            }
+        } else {
+            gameState.stats.losses++;
+            gameState.stats.currentStreak = 0;
+        }
+    }
+    saveStats();
+
+    // Save completed game record
+    if (gameState.currentGameRecord) {
+        gameState.currentGameRecord.winner = winner;
+        gameState.currentGameRecord.endTime = new Date().toISOString();
+        saveGameRecord(gameState.currentGameRecord);
+    }
+
     document.getElementById('game-over-modal').style.display = 'block';
+}
+
+// ==================== LOCAL STORAGE ====================
+
+function saveStats() {
+    try {
+        localStorage.setItem('myllyStats', JSON.stringify(gameState.stats));
+        localStorage.setItem('myllySettings', JSON.stringify({
+            soundEnabled: gameState.soundEnabled,
+            removeFromHand: gameState.removeFromHand
+        }));
+    } catch (e) {
+        console.error('Failed to save stats:', e);
+    }
+}
+
+function loadStats() {
+    try {
+        const savedStats = localStorage.getItem('myllyStats');
+        if (savedStats) {
+            gameState.stats = JSON.parse(savedStats);
+        }
+
+        const savedSettings = localStorage.getItem('myllySettings');
+        if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            gameState.soundEnabled = settings.soundEnabled ?? true;
+            gameState.removeFromHand = settings.removeFromHand ?? true;
+        }
+
+        // Load saved games
+        const savedGames = localStorage.getItem('myllySavedGames');
+        if (savedGames) {
+            gameState.savedGames = JSON.parse(savedGames);
+        }
+    } catch (e) {
+        console.error('Failed to load stats:', e);
+    }
+}
+
+function saveGameRecord(gameRecord) {
+    try {
+        // Add to saved games list (keep last 20 games)
+        gameState.savedGames.unshift(gameRecord);
+        if (gameState.savedGames.length > 20) {
+            gameState.savedGames = gameState.savedGames.slice(0, 20);
+        }
+
+        localStorage.setItem('myllySavedGames', JSON.stringify(gameState.savedGames));
+    } catch (e) {
+        console.error('Failed to save game record:', e);
+    }
 }
 
 // ==================== PLAYBACK FUNCTIONS ====================
