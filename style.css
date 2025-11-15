@@ -11,13 +11,13 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 40px 20px;
+    padding: 20px 12px;
 }
 
 .container {
     background: #ffffff;
     border-radius: 8px;
-    padding: 48px;
+    padding: 32px 24px;
     box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
     max-width: 1000px;
     width: 100%;
@@ -72,8 +72,8 @@ body {
 h1 {
     text-align: center;
     color: #2c2c2c;
-    margin-bottom: 40px;
-    font-size: 2.2em;
+    margin-bottom: 32px;
+    font-size: 1.8em;
     font-weight: 300;
     letter-spacing: 0.5px;
 }
@@ -181,10 +181,10 @@ h1 {
 .board-container {
     display: flex;
     justify-content: center;
-    margin: 40px 0;
+    margin: 32px 0;
     background: #f2f2ed;
     border-radius: 4px;
-    padding: 48px;
+    padding: 32px 24px;
     border: 1px solid #d8d8d8;
 }
 
@@ -748,31 +748,43 @@ button:hover {
 
 @media (max-width: 768px) {
     h1 {
-        font-size: 1.8em;
+        font-size: 1.6em;
+        margin-bottom: 24px;
     }
 
     .container {
-        padding: 32px 24px;
+        padding: 24px 16px;
     }
 
     .game-info {
         flex-direction: column;
+        margin-bottom: 24px;
+        gap: 16px;
     }
 
     .player-info {
         flex-direction: column;
+        gap: 12px;
     }
 
     .player {
-        padding: 14px 18px;
+        padding: 12px 16px;
+        font-size: 0.9em;
+    }
+
+    .player-indicator {
+        width: 28px;
+        height: 28px;
     }
 
     .game-status {
         min-width: auto;
+        padding: 12px 16px;
     }
 
     .board-container {
-        padding: 32px 24px;
+        padding: 24px 16px;
+        margin: 24px 0;
     }
 
     .controls {
@@ -782,20 +794,21 @@ button:hover {
 
     button {
         width: 100%;
-        padding: 14px 24px;
+        padding: 12px 20px;
+        font-size: 0.95em;
     }
 
     .modal-content {
-        padding: 32px 24px;
+        padding: 24px 20px;
         width: 95%;
     }
 
     .modal-content h2 {
-        font-size: 1.5em;
+        font-size: 1.4em;
     }
 
     #game-over-modal h2 {
-        font-size: 1.8em;
+        font-size: 1.6em;
     }
 
     .difficulty-buttons {
@@ -803,19 +816,19 @@ button:hover {
     }
 
     .removal-indicator {
-        font-size: 1em;
-        padding: 12px 24px;
+        font-size: 0.95em;
+        padding: 12px 20px;
     }
 
     .playback-controls {
         flex-wrap: wrap;
         gap: 8px;
-        padding: 12px 16px;
+        padding: 10px 12px;
     }
 
     .playback-btn {
         padding: 8px 10px;
-        font-size: 1em;
+        font-size: 0.95em;
         min-width: 36px;
     }
 
@@ -832,7 +845,7 @@ button:hover {
 
     .game-tab {
         padding: 10px 20px;
-        font-size: 0.95em;
+        font-size: 0.9em;
     }
 
     #connect4-board {
@@ -849,5 +862,142 @@ button:hover {
     .c4-cell {
         width: 40px;
         height: 40px;
+    }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+    body {
+        padding: 12px 8px;
+    }
+
+    .container {
+        padding: 20px 12px;
+        border-radius: 4px;
+    }
+
+    h1 {
+        font-size: 1.4em;
+        margin-bottom: 20px;
+    }
+
+    .game-selector {
+        margin-bottom: 20px;
+    }
+
+    .game-tab {
+        padding: 8px 16px;
+        font-size: 0.85em;
+    }
+
+    .game-info {
+        margin-bottom: 20px;
+        gap: 12px;
+    }
+
+    .player {
+        padding: 10px 12px;
+        font-size: 0.85em;
+        gap: 8px;
+    }
+
+    .player-indicator {
+        width: 24px;
+        height: 24px;
+    }
+
+    .pieces-remaining {
+        font-size: 0.85em;
+    }
+
+    .pieces-remaining span:last-child {
+        font-size: 1.2em;
+    }
+
+    .game-status {
+        padding: 10px 12px;
+        font-size: 0.85em;
+    }
+
+    .board-container {
+        padding: 16px 12px;
+        margin: 20px 0;
+    }
+
+    #game-board {
+        max-width: 100%;
+    }
+
+    .controls {
+        gap: 8px;
+    }
+
+    button {
+        padding: 10px 16px;
+        font-size: 0.9em;
+    }
+
+    .removal-indicator {
+        font-size: 0.85em;
+        padding: 10px 16px;
+    }
+
+    .playback-controls {
+        gap: 6px;
+        padding: 8px 10px;
+    }
+
+    .playback-btn {
+        padding: 6px 8px;
+        font-size: 0.85em;
+        min-width: 32px;
+    }
+
+    .modal-content {
+        padding: 20px 16px;
+    }
+
+    .modal-content h2 {
+        font-size: 1.2em;
+    }
+
+    #game-over-modal h2 {
+        font-size: 1.4em;
+    }
+
+    #connect4-board {
+        gap: 3px;
+        padding: 10px;
+    }
+
+    .c4-column {
+        gap: 3px;
+        padding: 3px;
+    }
+
+    .c4-cell {
+        width: 35px;
+        height: 35px;
+    }
+}
+
+/* Larger screens - add more padding */
+@media (min-width: 769px) {
+    .container {
+        padding: 48px;
+    }
+
+    h1 {
+        font-size: 2.2em;
+        margin-bottom: 40px;
+    }
+
+    .game-info {
+        margin-bottom: 40px;
+    }
+
+    .board-container {
+        padding: 48px;
+        margin: 40px 0;
     }
 }
