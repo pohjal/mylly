@@ -15,7 +15,10 @@ const gameState = {
     isAIThinking: false,
     lastAIMove: null, // Track last AI move for highlighting
     justPlaced: null, // Track newly placed piece
-    moveFrom: null // Track position piece moved from
+    moveFrom: null, // Track position piece moved from
+    moveHistory: [], // Track all moves for playback
+    isPlaybackMode: false, // Whether we're in playback mode
+    playbackIndex: -1 // Current position in playback (-1 = live game)
 };
 
 // Define adjacencies for each position
@@ -100,6 +103,14 @@ function initGame() {
             hideRules();
         }
     });
+
+    // Playback controls
+    document.getElementById('toggle-history-btn').addEventListener('click', toggleMoveHistory);
+    document.getElementById('first-move-btn').addEventListener('click', () => goToMove(0));
+    document.getElementById('prev-move-btn').addEventListener('click', previousMove);
+    document.getElementById('next-move-btn').addEventListener('click', nextMove);
+    document.getElementById('last-move-btn').addEventListener('click', () => goToMove(gameState.moveHistory.length - 1));
+    document.getElementById('exit-playback-btn').addEventListener('click', exitPlayback);
 }
 
 function showGameModeModal() {
@@ -120,6 +131,7 @@ function startGame(mode) {
 
 function handlePositionClick(e) {
     if (gameState.isAIThinking) return;
+    if (gameState.isPlaybackMode) return; // Prevent moves during playback
     if (gameState.gameMode === 'pva' && gameState.currentPlayer === 'black') return;
 
     const posIndex = parseInt(e.target.getAttribute('data-pos'));
@@ -157,6 +169,9 @@ function handlePlacement(posIndex) {
         gameState.blackPlaced++;
         gameState.pieceCount.black++;
     }
+
+    // Record move
+    recordMove('place', posIndex);
 
     updateDisplay();
 
@@ -231,6 +246,9 @@ function handleMovement(posIndex) {
                 }
             }, 600);
 
+            // Record move
+            recordMove('move', posIndex, movedFrom);
+
             updateDisplay();
 
             // Check for mill
@@ -288,6 +306,9 @@ function handleRemoval(posIndex) {
     gameState.board[posIndex] = null;
     gameState.pieceCount[opponent]--;
 
+    // Record move
+    recordMove('remove', posIndex);
+
     gameState.millFormed = false;
     gameState.phase = gameState.whitePlaced === 9 && gameState.blackPlaced === 9 ? 'movement' : 'placement';
 
@@ -304,6 +325,26 @@ function handleRemoval(posIndex) {
     if (gameState.gameMode === 'pva' && gameState.currentPlayer === 'black') {
         setTimeout(() => aiMakeMove(), 800);
     }
+}
+
+// Record move in history
+function recordMove(type, position, fromPos = null) {
+    if (gameState.isPlaybackMode) return; // Don't record during playback
+
+    const move = {
+        type: type, // 'place', 'move', 'remove'
+        player: gameState.currentPlayer,
+        position: position,
+        from: fromPos,
+        boardState: [...gameState.board],
+        whitePieces: gameState.pieceCount.white,
+        blackPieces: gameState.pieceCount.black,
+        moveNumber: gameState.moveHistory.length + 1
+    };
+
+    gameState.moveHistory.push(move);
+    updateMoveHistory();
+    updateMoveCounter();
 }
 
 // Show/hide removal indicator
@@ -823,8 +864,12 @@ function resetGame() {
     gameState.lastAIMove = null;
     gameState.justPlaced = null;
     gameState.moveFrom = null;
+    gameState.moveHistory = [];
+    gameState.isPlaybackMode = false;
+    gameState.playbackIndex = -1;
 
     document.getElementById('game-over-modal').style.display = 'none';
+    updateMoveHistory();
     updateDisplay();
 }
 
@@ -841,6 +886,129 @@ function showGameOver(winner) {
                       (gameState.gameMode === 'pva' ? 'AI wins!' : 'Black wins!');
     document.getElementById('winner-text').textContent = winnerText;
     document.getElementById('game-over-modal').style.display = 'block';
+}
+
+// ==================== PLAYBACK FUNCTIONS ====================
+
+function toggleMoveHistory() {
+    const container = document.getElementById('move-history-container');
+    const btn = document.getElementById('toggle-history-btn');
+    const controls = document.getElementById('playback-controls');
+
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        controls.style.display = gameState.moveHistory.length > 0 ? 'flex' : 'none';
+        btn.textContent = 'Hide';
+    } else {
+        container.style.display = 'none';
+        controls.style.display = 'none';
+        btn.textContent = 'Show';
+        exitPlayback();
+    }
+}
+
+function updateMoveHistory() {
+    const list = document.getElementById('move-history-list');
+    const controls = document.getElementById('playback-controls');
+
+    if (gameState.moveHistory.length === 0) {
+        list.innerHTML = '<div class="no-moves">No moves yet</div>';
+        controls.style.display = 'none';
+        return;
+    }
+
+    const container = document.getElementById('move-history-container');
+    if (container.style.display !== 'none') {
+        controls.style.display = 'flex';
+    }
+
+    list.innerHTML = '';
+    gameState.moveHistory.forEach((move, index) => {
+        const moveEl = document.createElement('div');
+        moveEl.className = 'move-item';
+        if (index === gameState.playbackIndex) {
+            moveEl.classList.add('active');
+        }
+
+        const playerSymbol = move.player === 'white' ? '○' : '●';
+        let moveText = '';
+
+        if (move.type === 'place') {
+            moveText = `${playerSymbol} placed at ${move.position}`;
+        } else if (move.type === 'move') {
+            moveText = `${playerSymbol} moved ${move.from} → ${move.position}`;
+        } else if (move.type === 'remove') {
+            moveText = `${playerSymbol} removed piece at ${move.position}`;
+        }
+
+        moveEl.innerHTML = `<span class="move-number">${move.moveNumber}.</span> ${moveText}`;
+        moveEl.addEventListener('click', () => goToMove(index));
+        list.appendChild(moveEl);
+    });
+
+    // Auto-scroll to active move
+    const activeMove = list.querySelector('.move-item.active');
+    if (activeMove) {
+        activeMove.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+function goToMove(index) {
+    if (index < 0 || index >= gameState.moveHistory.length) return;
+
+    gameState.isPlaybackMode = true;
+    gameState.playbackIndex = index;
+
+    const move = gameState.moveHistory[index];
+
+    // Restore board state
+    gameState.board = [...move.boardState];
+    gameState.pieceCount.white = move.whitePieces;
+    gameState.pieceCount.black = move.blackPieces;
+
+    updateMoveHistory();
+    updateDisplay();
+    updateMoveCounter();
+}
+
+function previousMove() {
+    if (gameState.playbackIndex > 0) {
+        goToMove(gameState.playbackIndex - 1);
+    }
+}
+
+function nextMove() {
+    if (gameState.playbackIndex < gameState.moveHistory.length - 1) {
+        goToMove(gameState.playbackIndex + 1);
+    }
+}
+
+function exitPlayback() {
+    if (!gameState.isPlaybackMode) return;
+
+    gameState.isPlaybackMode = false;
+    gameState.playbackIndex = -1;
+
+    // Restore to latest state
+    if (gameState.moveHistory.length > 0) {
+        const lastMove = gameState.moveHistory[gameState.moveHistory.length - 1];
+        gameState.board = [...lastMove.boardState];
+        gameState.pieceCount.white = lastMove.whitePieces;
+        gameState.pieceCount.black = lastMove.blackPieces;
+    }
+
+    updateMoveHistory();
+    updateDisplay();
+    updateMoveCounter();
+}
+
+function updateMoveCounter() {
+    const counter = document.getElementById('move-counter');
+    if (gameState.isPlaybackMode) {
+        counter.textContent = `Move ${gameState.playbackIndex + 1} / ${gameState.moveHistory.length}`;
+    } else {
+        counter.textContent = `Move ${gameState.moveHistory.length} / ${gameState.moveHistory.length}`;
+    }
 }
 
 // Initialize when page loads
