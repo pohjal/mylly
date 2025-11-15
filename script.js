@@ -533,7 +533,10 @@ function getBestPlacementMove() {
         return emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
     }
 
-    for (let pos of emptyPositions) {
+    // Move ordering: prioritize moves that form mills or are strategic
+    const orderedPositions = orderPlacementMoves(emptyPositions, 'black');
+
+    for (let pos of orderedPositions) {
         // Simulate placing piece
         gameState.board[pos] = 'black';
         gameState.pieceCount.black++;
@@ -591,37 +594,47 @@ function getBestMovementMove() {
         }
     }
 
+    // Generate and order all possible moves
+    const allMoves = [];
     for (let from of aiPositions) {
         const possibleMoves = canFly
             ? gameState.board.map((piece, idx) => piece === null ? idx : -1).filter(idx => idx !== -1)
             : adjacencies[from].filter(to => gameState.board[to] === null);
 
         for (let to of possibleMoves) {
-            // Simulate move
-            gameState.board[to] = 'black';
-            gameState.board[from] = null;
-
-            let score;
-            if (isInMill(to, 'black')) {
-                // If forms mill, need to evaluate removal
-                score = getBestRemovalScore(depth - 1, alpha, beta, false);
-            } else {
-                // Continue with opponent's turn
-                score = minimaxMovement(depth - 1, alpha, beta, false);
-            }
-
-            // Undo simulation
-            gameState.board[from] = 'black';
-            gameState.board[to] = null;
-
-            if (score > bestScore) {
-                bestScore = score;
-                bestMove = { from, to };
-            }
-
-            alpha = Math.max(alpha, score);
-            if (beta <= alpha) break; // Beta cutoff
+            allMoves.push({ from, to });
         }
+    }
+
+    // Order moves by heuristic quality
+    const orderedMoves = orderMovementMoves(allMoves, 'black');
+
+    for (let move of orderedMoves) {
+        const { from, to } = move;
+        // Simulate move
+        gameState.board[to] = 'black';
+        gameState.board[from] = null;
+
+        let score;
+        if (isInMill(to, 'black')) {
+            // If forms mill, need to evaluate removal
+            score = getBestRemovalScore(depth - 1, alpha, beta, false);
+        } else {
+            // Continue with opponent's turn
+            score = minimaxMovement(depth - 1, alpha, beta, false);
+        }
+
+        // Undo simulation
+        gameState.board[from] = 'black';
+        gameState.board[to] = null;
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestMove = { from, to };
+        }
+
+        alpha = Math.max(alpha, score);
+        if (beta <= alpha) break; // Beta cutoff
     }
 
     return bestMove;
@@ -656,9 +669,9 @@ function getBestRemovalMove() {
 function getSearchDepth() {
     switch (gameState.aiDifficulty) {
         case 'easy': return 1;
-        case 'medium': return 2;
-        case 'hard': return 4;
-        default: return 4;
+        case 'medium': return 3;
+        case 'hard': return 5;
+        default: return 5;
     }
 }
 
@@ -1000,18 +1013,42 @@ function evaluateRemovalMove(pos, depth) {
 function evaluateBoardState() {
     let score = 0;
 
-    // Piece count advantage
-    score += (gameState.pieceCount.black - gameState.pieceCount.white) * 10;
+    // Piece count advantage (very important in endgame)
+    const pieceDiff = gameState.pieceCount.black - gameState.pieceCount.white;
+    score += pieceDiff * 50;
 
     // Mill count
     const aiMills = countMills('black');
     const opponentMills = countMills('white');
-    score += (aiMills - opponentMills) * 15;
+    score += (aiMills - opponentMills) * 20;
 
-    // Potential mills
+    // Potential mills (two pieces in a row with empty third)
     const aiPotentialMills = countAllPotentialMills('black');
     const opponentPotentialMills = countAllPotentialMills('white');
-    score += (aiPotentialMills - opponentPotentialMills) * 5;
+    score += (aiPotentialMills - opponentPotentialMills) * 10;
+
+    // Blocked mills (opponent has two pieces, we have the third)
+    const aiBlockedOpponentMills = countBlockedMills('white', 'black');
+    score += aiBlockedOpponentMills * 15;
+
+    // Mobility (number of possible moves)
+    const aiMobility = countMobility('black');
+    const opponentMobility = countMobility('white');
+    score += (aiMobility - opponentMobility) * 3;
+
+    // Double mill opportunities (piece involved in multiple potential mills)
+    const aiDoubleMills = countDoubleMills('black');
+    const opponentDoubleMills = countDoubleMills('white');
+    score += (aiDoubleMills - opponentDoubleMills) * 8;
+
+    // Strategic positions (corners and intersections)
+    const aiStrategic = countStrategicPositions('black');
+    const opponentStrategic = countStrategicPositions('white');
+    score += (aiStrategic - opponentStrategic) * 4;
+
+    // Winning/losing detection
+    if (gameState.pieceCount.white <= 2) score += 10000;
+    if (gameState.pieceCount.black <= 2) score -= 10000;
 
     return score;
 }
@@ -1063,6 +1100,141 @@ function checkBlocksMillFormation(pos, player) {
         }
     }
     return false;
+}
+
+// Count mills that are blocked (opponent has 2 pieces, we have the blocking third)
+function countBlockedMills(opponent, blocker) {
+    let count = 0;
+    for (let mill of mills) {
+        const opponentPieces = mill.filter(p => gameState.board[p] === opponent).length;
+        const blockerPieces = mill.filter(p => gameState.board[p] === blocker).length;
+        if (opponentPieces === 2 && blockerPieces === 1) {
+            count++;
+        }
+    }
+    return count;
+}
+
+// Count mobility (number of valid moves available)
+function countMobility(player) {
+    if (gameState.phase === 'placement') {
+        // During placement, mobility is number of empty positions
+        return gameState.board.filter(p => p === null).length;
+    }
+
+    let moves = 0;
+    const canFly = gameState.pieceCount[player] === 3;
+    const playerPositions = gameState.board
+        .map((piece, idx) => piece === player ? idx : -1)
+        .filter(idx => idx !== -1);
+
+    for (let pos of playerPositions) {
+        if (canFly) {
+            // Can move anywhere
+            moves += gameState.board.filter(p => p === null).length;
+        } else {
+            // Can only move to adjacent empty positions
+            moves += adjacencies[pos].filter(adj => gameState.board[adj] === null).length;
+        }
+    }
+    return moves;
+}
+
+// Count double mill opportunities (positions involved in 2+ potential mills)
+function countDoubleMills(player) {
+    let count = 0;
+    const playerPositions = gameState.board
+        .map((piece, idx) => piece === player ? idx : -1)
+        .filter(idx => idx !== -1);
+
+    for (let pos of playerPositions) {
+        const potentialMills = countPotentialMills(pos, player);
+        if (potentialMills >= 2) {
+            count++;
+        }
+    }
+    return count;
+}
+
+// Count pieces on strategic positions
+function countStrategicPositions(player) {
+    let count = 0;
+    for (let pos of strategicPositions) {
+        if (gameState.board[pos] === player) {
+            count++;
+        }
+    }
+    return count;
+}
+
+// Move ordering for better alpha-beta pruning
+function orderPlacementMoves(positions, player) {
+    const scored = positions.map(pos => {
+        let score = 0;
+
+        // Temporarily place piece to evaluate
+        gameState.board[pos] = player;
+
+        // Prioritize forming mills
+        if (isInMill(pos, player)) score += 1000;
+
+        // Prioritize blocking opponent mills
+        const opponent = player === 'black' ? 'white' : 'black';
+        if (checkBlocksMillFormation(pos, opponent)) score += 500;
+
+        // Prioritize creating potential mills
+        score += countPotentialMills(pos, player) * 100;
+
+        // Prioritize strategic positions
+        if (strategicPositions.includes(pos)) score += 50;
+
+        // Restore board
+        gameState.board[pos] = null;
+
+        return { pos, score };
+    });
+
+    // Sort by score descending
+    scored.sort((a, b) => b.score - a.score);
+    return scored.map(item => item.pos);
+}
+
+function orderMovementMoves(moves, player) {
+    const scored = moves.map(move => {
+        let score = 0;
+        const { from, to } = move;
+
+        // Temporarily make move to evaluate
+        gameState.board[to] = player;
+        gameState.board[from] = null;
+
+        // Prioritize forming mills
+        if (isInMill(to, player)) score += 1000;
+
+        // Prioritize blocking opponent mills
+        const opponent = player === 'black' ? 'white' : 'black';
+        if (checkBlocksMillFormation(to, opponent)) score += 500;
+
+        // Prioritize creating potential mills
+        score += countPotentialMills(to, player) * 100;
+
+        // Prioritize strategic positions
+        if (strategicPositions.includes(to)) score += 50;
+
+        // Prioritize mobility
+        const mobility = adjacencies[to].filter(adj => gameState.board[adj] === null).length;
+        score += mobility * 10;
+
+        // Restore board
+        gameState.board[from] = player;
+        gameState.board[to] = null;
+
+        return { move, score };
+    });
+
+    // Sort by score descending
+    scored.sort((a, b) => b.score - a.score);
+    return scored.map(item => item.move);
 }
 
 // ==================== DISPLAY & UI ====================
