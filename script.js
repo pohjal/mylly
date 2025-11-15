@@ -12,7 +12,10 @@ const gameState = {
     pieceCount: { white: 0, black: 0 },
     gameMode: null, // 'pvp' or 'pva'
     aiDifficulty: 'hard', // 'easy', 'medium', 'hard'
-    isAIThinking: false
+    isAIThinking: false,
+    lastAIMove: null, // Track last AI move for highlighting
+    justPlaced: null, // Track newly placed piece
+    moveFrom: null // Track position piece moved from
 };
 
 // Define adjacencies for each position
@@ -138,6 +141,14 @@ function handlePlacement(posIndex) {
 
     // Place piece
     gameState.board[posIndex] = gameState.currentPlayer;
+    gameState.justPlaced = posIndex;
+
+    // Clear animation after it completes
+    setTimeout(() => {
+        if (gameState.justPlaced === posIndex) {
+            gameState.justPlaced = null;
+        }
+    }, 400);
 
     if (gameState.currentPlayer === 'white') {
         gameState.whitePlaced++;
@@ -199,10 +210,26 @@ function handleMovement(posIndex) {
 
         if (isEmpty && (canFly || isAdjacent)) {
             // Move piece
-            gameState.board[posIndex] = gameState.currentPlayer;
-            gameState.board[gameState.selectedPosition] = null;
             const movedFrom = gameState.selectedPosition;
+            gameState.board[posIndex] = gameState.currentPlayer;
+            gameState.board[movedFrom] = null;
             gameState.selectedPosition = null;
+
+            // Set animation states
+            gameState.justPlaced = posIndex;
+            gameState.moveFrom = movedFrom;
+
+            // Clear animations after they complete
+            setTimeout(() => {
+                if (gameState.justPlaced === posIndex) {
+                    gameState.justPlaced = null;
+                }
+            }, 400);
+            setTimeout(() => {
+                if (gameState.moveFrom === movedFrom) {
+                    gameState.moveFrom = null;
+                }
+            }, 600);
 
             updateDisplay();
 
@@ -375,6 +402,7 @@ function aiMakeMove() {
 function aiPlacePiece() {
     const move = getBestPlacementMove();
     if (move !== null) {
+        gameState.lastAIMove = move;
         handlePlacement(move);
     }
 }
@@ -383,6 +411,7 @@ function aiMovePiece() {
     const move = getBestMovementMove();
     if (move) {
         gameState.selectedPosition = move.from;
+        gameState.lastAIMove = move.to;
         handleMovement(move.to);
     }
 }
@@ -715,7 +744,7 @@ function updateDisplay() {
     // Update board visualization
     const positions = document.querySelectorAll('.position');
     positions.forEach((pos, idx) => {
-        pos.classList.remove('white', 'black', 'selected', 'valid-move', 'removable');
+        pos.classList.remove('white', 'black', 'selected', 'valid-move', 'removable', 'ai-just-moved', 'just-placed', 'move-from');
 
         if (gameState.board[idx] === 'white') {
             pos.classList.add('white', 'occupied');
@@ -728,6 +757,21 @@ function updateDisplay() {
         // Highlight selected piece
         if (idx === gameState.selectedPosition) {
             pos.classList.add('selected');
+        }
+
+        // Highlight AI's last move
+        if (idx === gameState.lastAIMove && gameState.gameMode === 'pva') {
+            pos.classList.add('ai-just-moved');
+        }
+
+        // Animate newly placed piece
+        if (idx === gameState.justPlaced) {
+            pos.classList.add('just-placed');
+        }
+
+        // Animate position piece moved from
+        if (idx === gameState.moveFrom) {
+            pos.classList.add('move-from');
         }
 
         // Highlight valid moves
@@ -776,6 +820,9 @@ function resetGame() {
     gameState.millFormed = false;
     gameState.pieceCount = { white: 0, black: 0 };
     gameState.isAIThinking = false;
+    gameState.lastAIMove = null;
+    gameState.justPlaced = null;
+    gameState.moveFrom = null;
 
     document.getElementById('game-over-modal').style.display = 'none';
     updateDisplay();

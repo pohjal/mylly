@@ -125,10 +125,10 @@ h1 {
     display: flex;
     justify-content: center;
     margin: 40px 0;
-    background: #f8f8f5;
+    background: #f2f2ed;
     border-radius: 4px;
     padding: 48px;
-    border: 1px solid #e8e8e8;
+    border: 1px solid #d8d8d8;
 }
 
 #game-board {
@@ -161,15 +161,15 @@ h1 {
 }
 
 .position.white {
-    fill: #e8e8e8;
+    fill: #d4d4d0;
     stroke: #2c2c2c;
     stroke-width: 3;
 }
 
 .position.black {
     fill: #2c2c2c;
-    stroke: #2c2c2c;
-    stroke-width: 2;
+    stroke: #666666;
+    stroke-width: 3;
 }
 
 .position.selected {
@@ -218,6 +218,73 @@ h1 {
     50% {
         stroke-width: 5;
         fill: #f0c0c0;
+    }
+}
+
+.position.ai-just-moved {
+    animation: aiMoveHighlight 1.5s ease-out;
+}
+
+@keyframes aiMoveHighlight {
+    0% {
+        stroke: #8b7355;
+        stroke-width: 6;
+        filter: drop-shadow(0 0 12px rgba(139, 115, 85, 0.8));
+    }
+    100% {
+        stroke: #2c2c2c;
+        stroke-width: 3;
+        filter: none;
+    }
+}
+
+.position.just-placed {
+    animation: pieceAppear 0.4s ease-out;
+}
+
+@keyframes pieceAppear {
+    0% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.position.move-from {
+    animation: moveFrom 0.6s ease-out;
+}
+
+@keyframes moveFrom {
+    0%, 40% {
+        stroke: #8b7355;
+        stroke-width: 5;
+        fill: rgba(139, 115, 85, 0.2);
+    }
+    100% {
+        stroke: #2c2c2c;
+        stroke-width: 2;
+        fill: #fefefe;
+    }
+}
+
+.position.being-removed {
+    animation: pieceRemove 0.5s ease-out forwards;
+}
+
+@keyframes pieceRemove {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.3);
     }
 }
 
