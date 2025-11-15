@@ -7,6 +7,7 @@ const gameState = {
     blackPieces: 9,
     whitePlaced: 0,
     blackPlaced: 0,
+    piecesToPlace: { white: 9, black: 9 }, // Track pieces left to place
     selectedPosition: null,
     millFormed: false,
     pieceCount: { white: 0, black: 0 },
@@ -164,9 +165,11 @@ function handlePlacement(posIndex) {
     if (gameState.currentPlayer === 'white') {
         gameState.whitePlaced++;
         gameState.pieceCount.white++;
+        gameState.piecesToPlace.white--;
     } else {
         gameState.blackPlaced++;
         gameState.pieceCount.black++;
+        gameState.piecesToPlace.black--;
     }
 
     // Record move
@@ -1028,10 +1031,15 @@ function updateDisplay() {
     document.getElementById('player2-info').classList.toggle('active', gameState.currentPlayer === 'black');
 
     // Update remaining pieces
+    const inPlacementPhase = (gameState.whitePlaced < 9 || gameState.blackPlaced < 9);
+
+    document.getElementById('white-pieces-label').textContent = inPlacementPhase ? 'To Place:' : 'On Board:';
+    document.getElementById('black-pieces-label').textContent = inPlacementPhase ? 'To Place:' : 'On Board:';
+
     document.getElementById('white-remaining').textContent =
-        gameState.phase === 'placement' ? (9 - gameState.whitePlaced) : gameState.pieceCount.white;
+        inPlacementPhase ? gameState.piecesToPlace.white : gameState.pieceCount.white;
     document.getElementById('black-remaining').textContent =
-        gameState.phase === 'placement' ? (9 - gameState.blackPlaced) : gameState.pieceCount.black;
+        inPlacementPhase ? gameState.piecesToPlace.black : gameState.pieceCount.black;
 
     // Update phase display
     let phaseText = '';
@@ -1146,6 +1154,7 @@ function resetGame() {
     gameState.blackPieces = 9;
     gameState.whitePlaced = 0;
     gameState.blackPlaced = 0;
+    gameState.piecesToPlace = { white: 9, black: 9 };
     gameState.selectedPosition = null;
     gameState.millFormed = false;
     gameState.pieceCount = { white: 0, black: 0 };
