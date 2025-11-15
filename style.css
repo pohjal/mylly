@@ -555,121 +555,17 @@ button:hover {
     }
 }
 
-/* Playback Panel */
-.playback-panel {
-    margin: 32px 0;
-    background: #fafafa;
-    border-radius: 4px;
-    border: 1px solid #e8e8e8;
-    padding: 20px;
-}
-
-.playback-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-}
-
-.playback-header h3 {
-    font-size: 1.1em;
-    font-weight: 400;
-    color: #2c2c2c;
-}
-
-.toggle-btn {
-    padding: 6px 16px;
-    font-size: 0.9em;
-    background: #ffffff;
-    color: #2c2c2c;
-    border: 1px solid #d8d8d8;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.toggle-btn:hover {
-    background: #f0f0f0;
-    border-color: #2c2c2c;
-}
-
-.move-history-container {
-    margin-bottom: 16px;
-}
-
-.move-history-list {
-    max-height: 200px;
-    overflow-y: auto;
-    background: #ffffff;
-    border: 1px solid #e8e8e8;
-    border-radius: 4px;
-    padding: 8px;
-}
-
-.move-history-list::-webkit-scrollbar {
-    width: 8px;
-}
-
-.move-history-list::-webkit-scrollbar-track {
-    background: #f5f5f0;
-    border-radius: 4px;
-}
-
-.move-history-list::-webkit-scrollbar-thumb {
-    background: #d8d8d8;
-    border-radius: 4px;
-}
-
-.move-history-list::-webkit-scrollbar-thumb:hover {
-    background: #c0c0c0;
-}
-
-.no-moves {
-    text-align: center;
-    color: #999;
-    padding: 20px;
-    font-size: 0.9em;
-}
-
-.move-item {
-    padding: 8px 12px;
-    margin: 4px 0;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 0.95em;
-    color: #2c2c2c;
-    border: 1px solid transparent;
-}
-
-.move-item:hover {
-    background: #f5f5f0;
-    border-color: #e8e8e8;
-}
-
-.move-item.active {
-    background: #2c2c2c;
-    color: #ffffff;
-    border-color: #2c2c2c;
-}
-
-.move-number {
-    font-weight: 500;
-    margin-right: 8px;
-    color: #666;
-}
-
-.move-item.active .move-number {
-    color: #d8d8d8;
-}
-
+/* Playback Controls */
 .playback-controls {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 12px;
-    padding-top: 16px;
-    border-top: 1px solid #e8e8e8;
+    margin: 24px 0;
+    padding: 16px 20px;
+    background: #fafafa;
+    border-radius: 4px;
+    border: 1px solid #e8e8e8;
 }
 
 .playback-btn {
@@ -778,13 +674,10 @@ button:hover {
         padding: 12px 24px;
     }
 
-    .playback-panel {
-        padding: 16px;
-    }
-
     .playback-controls {
         flex-wrap: wrap;
         gap: 8px;
+        padding: 12px 16px;
     }
 
     .playback-btn {

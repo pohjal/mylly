@@ -31,6 +31,15 @@
             </div>
         </div>
 
+        <div class="playback-controls" id="playback-controls" style="display: none;">
+            <button id="first-move-btn" class="playback-btn" title="First move">⏮</button>
+            <button id="prev-move-btn" class="playback-btn" title="Previous move">◀</button>
+            <span class="move-counter" id="move-counter">Move 0 / 0</span>
+            <button id="next-move-btn" class="playback-btn" title="Next move">▶</button>
+            <button id="last-move-btn" class="playback-btn" title="Latest move">⏭</button>
+            <button id="exit-playback-btn" class="exit-playback-btn">Live Game</button>
+        </div>
+
         <div class="board-container">
             <svg id="game-board" viewBox="0 0 700 700">
                 <!-- Outer square -->
@@ -88,26 +97,6 @@
                 <circle cx="250" cy="450" r="15" class="position" data-pos="22"/>
                 <circle cx="250" cy="350" r="15" class="position" data-pos="23"/>
             </svg>
-        </div>
-
-        <div class="playback-panel" id="playback-panel">
-            <div class="playback-header">
-                <h3>Move History</h3>
-                <button id="toggle-history-btn" class="toggle-btn">Show</button>
-            </div>
-            <div class="move-history-container" id="move-history-container" style="display: none;">
-                <div class="move-history-list" id="move-history-list">
-                    <div class="no-moves">No moves yet</div>
-                </div>
-            </div>
-            <div class="playback-controls" id="playback-controls" style="display: none;">
-                <button id="first-move-btn" class="playback-btn" title="First move">⏮</button>
-                <button id="prev-move-btn" class="playback-btn" title="Previous move">◀</button>
-                <span class="move-counter" id="move-counter">Move 0 / 0</span>
-                <button id="next-move-btn" class="playback-btn" title="Next move">▶</button>
-                <button id="last-move-btn" class="playback-btn" title="Latest move">⏭</button>
-                <button id="exit-playback-btn" class="exit-playback-btn">Exit Playback</button>
-            </div>
         </div>
 
         <div class="controls">

@@ -105,7 +105,6 @@ function initGame() {
     });
 
     // Playback controls
-    document.getElementById('toggle-history-btn').addEventListener('click', toggleMoveHistory);
     document.getElementById('first-move-btn').addEventListener('click', () => goToMove(0));
     document.getElementById('prev-move-btn').addEventListener('click', previousMove);
     document.getElementById('next-move-btn').addEventListener('click', nextMove);
@@ -343,8 +342,17 @@ function recordMove(type, position, fromPos = null) {
     };
 
     gameState.moveHistory.push(move);
-    updateMoveHistory();
+    showPlaybackControls();
     updateMoveCounter();
+}
+
+function showPlaybackControls() {
+    const controls = document.getElementById('playback-controls');
+    if (gameState.moveHistory.length > 0) {
+        controls.style.display = 'flex';
+    } else {
+        controls.style.display = 'none';
+    }
 }
 
 // Show/hide removal indicator
@@ -869,7 +877,7 @@ function resetGame() {
     gameState.playbackIndex = -1;
 
     document.getElementById('game-over-modal').style.display = 'none';
-    updateMoveHistory();
+    showPlaybackControls();
     updateDisplay();
 }
 
@@ -890,69 +898,6 @@ function showGameOver(winner) {
 
 // ==================== PLAYBACK FUNCTIONS ====================
 
-function toggleMoveHistory() {
-    const container = document.getElementById('move-history-container');
-    const btn = document.getElementById('toggle-history-btn');
-    const controls = document.getElementById('playback-controls');
-
-    if (container.style.display === 'none') {
-        container.style.display = 'block';
-        controls.style.display = gameState.moveHistory.length > 0 ? 'flex' : 'none';
-        btn.textContent = 'Hide';
-    } else {
-        container.style.display = 'none';
-        controls.style.display = 'none';
-        btn.textContent = 'Show';
-        exitPlayback();
-    }
-}
-
-function updateMoveHistory() {
-    const list = document.getElementById('move-history-list');
-    const controls = document.getElementById('playback-controls');
-
-    if (gameState.moveHistory.length === 0) {
-        list.innerHTML = '<div class="no-moves">No moves yet</div>';
-        controls.style.display = 'none';
-        return;
-    }
-
-    const container = document.getElementById('move-history-container');
-    if (container.style.display !== 'none') {
-        controls.style.display = 'flex';
-    }
-
-    list.innerHTML = '';
-    gameState.moveHistory.forEach((move, index) => {
-        const moveEl = document.createElement('div');
-        moveEl.className = 'move-item';
-        if (index === gameState.playbackIndex) {
-            moveEl.classList.add('active');
-        }
-
-        const playerSymbol = move.player === 'white' ? '○' : '●';
-        let moveText = '';
-
-        if (move.type === 'place') {
-            moveText = `${playerSymbol} placed at ${move.position}`;
-        } else if (move.type === 'move') {
-            moveText = `${playerSymbol} moved ${move.from} → ${move.position}`;
-        } else if (move.type === 'remove') {
-            moveText = `${playerSymbol} removed piece at ${move.position}`;
-        }
-
-        moveEl.innerHTML = `<span class="move-number">${move.moveNumber}.</span> ${moveText}`;
-        moveEl.addEventListener('click', () => goToMove(index));
-        list.appendChild(moveEl);
-    });
-
-    // Auto-scroll to active move
-    const activeMove = list.querySelector('.move-item.active');
-    if (activeMove) {
-        activeMove.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-}
-
 function goToMove(index) {
     if (index < 0 || index >= gameState.moveHistory.length) return;
 
@@ -966,7 +911,6 @@ function goToMove(index) {
     gameState.pieceCount.white = move.whitePieces;
     gameState.pieceCount.black = move.blackPieces;
 
-    updateMoveHistory();
     updateDisplay();
     updateMoveCounter();
 }
@@ -997,7 +941,6 @@ function exitPlayback() {
         gameState.pieceCount.black = lastMove.blackPieces;
     }
 
-    updateMoveHistory();
     updateDisplay();
     updateMoveCounter();
 }
