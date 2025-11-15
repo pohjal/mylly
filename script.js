@@ -476,17 +476,46 @@ function getBestPlacementMove() {
     const depth = getSearchDepth();
     let bestScore = -Infinity;
     let bestMove = null;
+    let alpha = -Infinity;
+    let beta = Infinity;
 
     const emptyPositions = gameState.board
         .map((piece, idx) => piece === null ? idx : -1)
         .filter(idx => idx !== -1);
 
+    // Add randomness for easier difficulties
+    if (gameState.aiDifficulty === 'easy' && Math.random() < 0.25) {
+        return emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
+    }
+
     for (let pos of emptyPositions) {
-        const score = evaluatePlacementMove(pos, depth);
+        // Simulate placing piece
+        gameState.board[pos] = 'black';
+        gameState.pieceCount.black++;
+        const piecesToPlace = gameState.piecesToPlace.black;
+        gameState.piecesToPlace.black--;
+
+        let score;
+        if (isInMill(pos, 'black')) {
+            // If forms mill, need to evaluate removal
+            score = getBestRemovalScore(depth - 1, alpha, beta, false);
+        } else {
+            // Continue with opponent's turn
+            score = minimaxPlacement(depth - 1, alpha, beta, false);
+        }
+
+        // Undo simulation
+        gameState.board[pos] = null;
+        gameState.pieceCount.black--;
+        gameState.piecesToPlace.black = piecesToPlace;
+
         if (score > bestScore) {
             bestScore = score;
             bestMove = pos;
         }
+
+        alpha = Math.max(alpha, score);
+        if (beta <= alpha) break; // Beta cutoff
     }
 
     return bestMove;
@@ -496,6 +525,8 @@ function getBestMovementMove() {
     const depth = getSearchDepth();
     let bestScore = -Infinity;
     let bestMove = null;
+    let alpha = -Infinity;
+    let beta = Infinity;
 
     const aiPositions = gameState.board
         .map((piece, idx) => piece === 'black' ? idx : -1)
@@ -503,17 +534,48 @@ function getBestMovementMove() {
 
     const canFly = gameState.pieceCount.black === 3;
 
+    // Add randomness for easier difficulties
+    if (gameState.aiDifficulty === 'easy' && Math.random() < 0.25) {
+        const from = aiPositions[Math.floor(Math.random() * aiPositions.length)];
+        const possibleMoves = canFly
+            ? gameState.board.map((piece, idx) => piece === null ? idx : -1).filter(idx => idx !== -1)
+            : adjacencies[from].filter(to => gameState.board[to] === null);
+        if (possibleMoves.length > 0) {
+            const to = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+            return { from, to };
+        }
+    }
+
     for (let from of aiPositions) {
         const possibleMoves = canFly
             ? gameState.board.map((piece, idx) => piece === null ? idx : -1).filter(idx => idx !== -1)
             : adjacencies[from].filter(to => gameState.board[to] === null);
 
         for (let to of possibleMoves) {
-            const score = evaluateMovementMove(from, to, depth);
+            // Simulate move
+            gameState.board[to] = 'black';
+            gameState.board[from] = null;
+
+            let score;
+            if (isInMill(to, 'black')) {
+                // If forms mill, need to evaluate removal
+                score = getBestRemovalScore(depth - 1, alpha, beta, false);
+            } else {
+                // Continue with opponent's turn
+                score = minimaxMovement(depth - 1, alpha, beta, false);
+            }
+
+            // Undo simulation
+            gameState.board[from] = 'black';
+            gameState.board[to] = null;
+
             if (score > bestScore) {
                 bestScore = score;
                 bestMove = { from, to };
             }
+
+            alpha = Math.max(alpha, score);
+            if (beta <= alpha) break; // Beta cutoff
         }
     }
 
@@ -550,9 +612,228 @@ function getSearchDepth() {
     switch (gameState.aiDifficulty) {
         case 'easy': return 1;
         case 'medium': return 2;
-        case 'hard': return 3;
-        default: return 3;
+        case 'hard': return 4;
+        default: return 4;
     }
+}
+
+// Minimax with alpha-beta pruning for placement phase
+function minimaxPlacement(depth, alpha, beta, isMaximizing) {
+    // Check terminal states
+    if (gameState.pieceCount.white <= 2 && gameState.piecesToPlace.white === 0) {
+        return 10000; // AI wins
+    }
+    if (gameState.pieceCount.black <= 2 && gameState.piecesToPlace.black === 0) {
+        return -10000; // AI loses
+    }
+
+    // Check if placement phase is over
+    if (gameState.piecesToPlace.white === 0 && gameState.piecesToPlace.black === 0) {
+        return minimaxMovement(depth, alpha, beta, isMaximizing);
+    }
+
+    if (depth === 0) {
+        return evaluateBoardState();
+    }
+
+    const player = isMaximizing ? 'black' : 'white';
+    const piecesToPlace = isMaximizing ? gameState.piecesToPlace.black : gameState.piecesToPlace.white;
+
+    if (piecesToPlace === 0) {
+        return minimaxMovement(depth, alpha, beta, isMaximizing);
+    }
+
+    const emptyPositions = gameState.board
+        .map((piece, idx) => piece === null ? idx : -1)
+        .filter(idx => idx !== -1);
+
+    if (isMaximizing) {
+        let maxScore = -Infinity;
+        for (let pos of emptyPositions) {
+            gameState.board[pos] = player;
+            gameState.pieceCount[player]++;
+            gameState.piecesToPlace[player]--;
+
+            let score;
+            if (isInMill(pos, player)) {
+                score = getBestRemovalScore(depth - 1, alpha, beta, false);
+            } else {
+                score = minimaxPlacement(depth - 1, alpha, beta, false);
+            }
+
+            gameState.board[pos] = null;
+            gameState.pieceCount[player]--;
+            gameState.piecesToPlace[player]++;
+
+            maxScore = Math.max(maxScore, score);
+            alpha = Math.max(alpha, score);
+            if (beta <= alpha) break;
+        }
+        return maxScore;
+    } else {
+        let minScore = Infinity;
+        for (let pos of emptyPositions) {
+            gameState.board[pos] = player;
+            gameState.pieceCount[player]++;
+            gameState.piecesToPlace[player]--;
+
+            let score;
+            if (isInMill(pos, player)) {
+                score = getWorstRemovalScore(depth - 1, alpha, beta, true);
+            } else {
+                score = minimaxPlacement(depth - 1, alpha, beta, true);
+            }
+
+            gameState.board[pos] = null;
+            gameState.pieceCount[player]--;
+            gameState.piecesToPlace[player]++;
+
+            minScore = Math.min(minScore, score);
+            beta = Math.min(beta, score);
+            if (beta <= alpha) break;
+        }
+        return minScore;
+    }
+}
+
+// Minimax with alpha-beta pruning for movement phase
+function minimaxMovement(depth, alpha, beta, isMaximizing) {
+    // Check terminal states
+    if (gameState.pieceCount.white <= 2) return 10000; // AI wins
+    if (gameState.pieceCount.black <= 2) return -10000; // AI loses
+
+    if (depth === 0) {
+        return evaluateBoardState();
+    }
+
+    const player = isMaximizing ? 'black' : 'white';
+    const playerPositions = gameState.board
+        .map((piece, idx) => piece === player ? idx : -1)
+        .filter(idx => idx !== -1);
+
+    const canFly = gameState.pieceCount[player] === 3;
+
+    if (isMaximizing) {
+        let maxScore = -Infinity;
+        for (let from of playerPositions) {
+            const possibleMoves = canFly
+                ? gameState.board.map((piece, idx) => piece === null ? idx : -1).filter(idx => idx !== -1)
+                : adjacencies[from].filter(to => gameState.board[to] === null);
+
+            for (let to of possibleMoves) {
+                gameState.board[to] = player;
+                gameState.board[from] = null;
+
+                let score;
+                if (isInMill(to, player)) {
+                    score = getBestRemovalScore(depth - 1, alpha, beta, false);
+                } else {
+                    score = minimaxMovement(depth - 1, alpha, beta, false);
+                }
+
+                gameState.board[from] = player;
+                gameState.board[to] = null;
+
+                maxScore = Math.max(maxScore, score);
+                alpha = Math.max(alpha, score);
+                if (beta <= alpha) break;
+            }
+            if (beta <= alpha) break;
+        }
+        return maxScore;
+    } else {
+        let minScore = Infinity;
+        for (let from of playerPositions) {
+            const possibleMoves = canFly
+                ? gameState.board.map((piece, idx) => piece === null ? idx : -1).filter(idx => idx !== -1)
+                : adjacencies[from].filter(to => gameState.board[to] === null);
+
+            for (let to of possibleMoves) {
+                gameState.board[to] = player;
+                gameState.board[from] = null;
+
+                let score;
+                if (isInMill(to, player)) {
+                    score = getWorstRemovalScore(depth - 1, alpha, beta, true);
+                } else {
+                    score = minimaxMovement(depth - 1, alpha, beta, true);
+                }
+
+                gameState.board[from] = player;
+                gameState.board[to] = null;
+
+                minScore = Math.min(minScore, score);
+                beta = Math.min(beta, score);
+                if (beta <= alpha) break;
+            }
+            if (beta <= alpha) break;
+        }
+        return minScore;
+    }
+}
+
+// Get best score after AI removes opponent piece
+function getBestRemovalScore(depth, alpha, beta, nextIsMaximizing) {
+    const opponentPositions = gameState.board
+        .map((piece, idx) => piece === 'white' ? idx : -1)
+        .filter(idx => idx !== -1);
+
+    let bestScore = -Infinity;
+
+    for (let pos of opponentPositions) {
+        if (isInMill(pos, 'white')) {
+            const hasNonMillPiece = opponentPositions.some(p => !isInMill(p, 'white'));
+            if (hasNonMillPiece) continue;
+        }
+
+        gameState.board[pos] = null;
+        gameState.pieceCount.white--;
+
+        const score = gameState.piecesToPlace.white > 0 || gameState.piecesToPlace.black > 0
+            ? minimaxPlacement(depth, alpha, beta, nextIsMaximizing)
+            : minimaxMovement(depth, alpha, beta, nextIsMaximizing);
+
+        gameState.board[pos] = 'white';
+        gameState.pieceCount.white++;
+
+        bestScore = Math.max(bestScore, score);
+        alpha = Math.max(alpha, score);
+        if (beta <= alpha) break;
+    }
+
+    return bestScore;
+}
+
+// Get worst score after opponent removes AI piece
+function getWorstRemovalScore(depth, alpha, beta, nextIsMaximizing) {
+    const aiPositions = gameState.board
+        .map((piece, idx) => piece === 'black' ? idx : -1)
+        .filter(idx => idx !== -1);
+
+    let worstScore = Infinity;
+
+    for (let pos of aiPositions) {
+        if (isInMill(pos, 'black')) {
+            const hasNonMillPiece = aiPositions.some(p => !isInMill(p, 'black'));
+            if (hasNonMillPiece) continue;
+        }
+
+        gameState.board[pos] = null;
+        gameState.pieceCount.black--;
+
+        const score = gameState.piecesToPlace.white > 0 || gameState.piecesToPlace.black > 0
+            ? minimaxPlacement(depth, alpha, beta, nextIsMaximizing)
+            : minimaxMovement(depth, alpha, beta, nextIsMaximizing);
+
+        gameState.board[pos] = 'black';
+        gameState.pieceCount.black++;
+
+        worstScore = Math.min(worstScore, score);
+        beta = Math.min(beta, score);
+        if (beta <= alpha) break;
+    }
+
+    return worstScore;
 }
 
 function evaluatePlacementMove(pos, depth) {

@@ -174,11 +174,11 @@
                 <div class="player-info">
                     <div id="c4-player1-info" class="player active">
                         <div class="player-indicator" style="background: #e74c3c;"></div>
-                        <span>Red Player</span>
+                        <span id="c4-player1-label">Red Player</span>
                     </div>
                     <div id="c4-player2-info" class="player">
                         <div class="player-indicator" style="background: #f39c12;"></div>
-                        <span>Yellow Player</span>
+                        <span id="c4-player2-label">Yellow Player</span>
                     </div>
                 </div>
 
@@ -222,6 +222,24 @@
                             <li>Connect four pieces horizontally, vertically, or diagonally to win</li>
                             <li>If the board fills up with no winner, it's a draw</li>
                         </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="c4-game-mode-modal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <h2>Select Game Mode</h2>
+                    <div class="game-mode-buttons">
+                        <button id="c4-pvp-btn" class="mode-btn">Player vs Player</button>
+                        <button id="c4-pva-btn" class="mode-btn">Player vs AI</button>
+                    </div>
+                    <div class="difficulty-select" id="c4-difficulty-select" style="display: none;">
+                        <h3>AI Difficulty</h3>
+                        <div class="difficulty-buttons">
+                            <button class="c4-difficulty-btn" data-difficulty="easy">Easy</button>
+                            <button class="c4-difficulty-btn" data-difficulty="medium">Medium</button>
+                            <button class="c4-difficulty-btn active" data-difficulty="hard">Hard</button>
+                        </div>
                     </div>
                 </div>
             </div>
