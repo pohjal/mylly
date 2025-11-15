@@ -26,6 +26,8 @@ const gameState = {
     historyIndex: -1, // Current position in state history
     currentGameRecord: null, // Current game being played
     savedGames: [], // List of saved game records
+    hintPosition: null, // Position suggested by hint
+    hintFromPosition: null, // Source position for movement hint
     stats: {
         gamesPlayed: 0,
         wins: 0,
@@ -196,6 +198,7 @@ function initGame() {
         pos.addEventListener('click', handlePositionClick);
     });
 
+    document.getElementById('hint-btn').addEventListener('click', showHint);
     document.getElementById('undo-btn').addEventListener('click', undoMove);
     document.getElementById('redo-btn').addEventListener('click', redoMove);
     document.getElementById('reset-btn').addEventListener('click', showGameModeModal);
@@ -1481,7 +1484,7 @@ function updateDisplay() {
     // Update board visualization
     const positions = document.querySelectorAll('.position');
     positions.forEach((pos, idx) => {
-        pos.classList.remove('white', 'black', 'selected', 'valid-move', 'removable', 'ai-just-moved', 'just-placed', 'move-from');
+        pos.classList.remove('white', 'black', 'selected', 'valid-move', 'removable', 'ai-just-moved', 'just-placed', 'move-from', 'hint', 'hint-from');
 
         if (gameState.board[idx] === 'white') {
             pos.classList.add('white', 'occupied');
@@ -1494,6 +1497,14 @@ function updateDisplay() {
         // Highlight selected piece
         if (idx === gameState.selectedPosition) {
             pos.classList.add('selected');
+        }
+
+        // Highlight hint positions
+        if (idx === gameState.hintPosition) {
+            pos.classList.add('hint');
+        }
+        if (idx === gameState.hintFromPosition) {
+            pos.classList.add('hint-from');
         }
 
         // Highlight AI's last move
@@ -1731,6 +1742,194 @@ function analyzeGame(game) {
     // For now, just show an alert with game info
     // In a full implementation, this would open a detailed analysis view
     alert(`Game Analysis\n\nDate: ${new Date(game.date).toLocaleString()}\nMode: ${game.gameMode}\nMoves: ${game.moves.length}\nWinner: ${game.winner}\n\nDetailed analysis feature coming soon!`);
+}
+
+// ==================== HINT SYSTEM ====================
+
+function showHint() {
+    // Can't show hint during playback, AI turn, or removal phase
+    if (gameState.isPlaybackMode || gameState.isAIThinking) return;
+
+    // In AI mode, only show hints for white player
+    if (gameState.gameMode === 'pva' && gameState.currentPlayer === 'black') return;
+
+    // Clear previous hint
+    gameState.hintPosition = null;
+    gameState.hintFromPosition = null;
+
+    let hint = null;
+
+    if (gameState.phase === 'placement') {
+        hint = getBestMoveForPlayer(gameState.currentPlayer, 'placement');
+        if (hint !== null) {
+            gameState.hintPosition = hint;
+        }
+    } else if (gameState.phase === 'movement') {
+        hint = getBestMoveForPlayer(gameState.currentPlayer, 'movement');
+        if (hint) {
+            gameState.hintPosition = hint.to;
+            gameState.hintFromPosition = hint.from;
+        }
+    } else if (gameState.phase === 'removal') {
+        hint = getBestMoveForPlayer(gameState.currentPlayer, 'removal');
+        if (hint !== null) {
+            gameState.hintPosition = hint;
+        }
+    }
+
+    updateDisplay();
+
+    // Clear hint after 3 seconds
+    setTimeout(() => {
+        gameState.hintPosition = null;
+        gameState.hintFromPosition = null;
+        updateDisplay();
+    }, 3000);
+}
+
+function getBestMoveForPlayer(player, phase) {
+    const depth = 2; // Use depth 2 for hints to keep it fast
+
+    if (phase === 'placement') {
+        return getBestPlacementMoveForPlayer(player, depth);
+    } else if (phase === 'movement') {
+        return getBestMovementMoveForPlayer(player, depth);
+    } else if (phase === 'removal') {
+        return getBestRemovalMoveForPlayer(player);
+    }
+
+    return null;
+}
+
+function getBestPlacementMoveForPlayer(player, depth) {
+    let bestScore = -Infinity;
+    let bestMove = null;
+
+    const emptyPositions = gameState.board
+        .map((piece, idx) => piece === null ? idx : -1)
+        .filter(idx => idx !== -1);
+
+    // Order positions for better evaluation
+    const orderedPositions = orderPlacementMoves(emptyPositions, player);
+
+    for (let pos of orderedPositions) {
+        // Simulate placing piece
+        gameState.board[pos] = player;
+
+        let score = evaluateBoardStateForPlayer(player);
+
+        // Bonus for forming a mill
+        if (isInMill(pos, player)) {
+            score += 100;
+        }
+
+        // Undo simulation
+        gameState.board[pos] = null;
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestMove = pos;
+        }
+    }
+
+    return bestMove;
+}
+
+function getBestMovementMoveForPlayer(player, depth) {
+    let bestScore = -Infinity;
+    let bestMove = null;
+
+    const playerPositions = gameState.board
+        .map((piece, idx) => piece === player ? idx : -1)
+        .filter(idx => idx !== -1);
+
+    const canFly = gameState.pieceCount[player] === 3;
+
+    for (let from of playerPositions) {
+        const possibleMoves = canFly
+            ? gameState.board.map((piece, idx) => piece === null ? idx : -1).filter(idx => idx !== -1)
+            : adjacencies[from].filter(to => gameState.board[to] === null);
+
+        for (let to of possibleMoves) {
+            // Simulate move
+            gameState.board[to] = player;
+            gameState.board[from] = null;
+
+            let score = evaluateBoardStateForPlayer(player);
+
+            // Bonus for forming a mill
+            if (isInMill(to, player)) {
+                score += 100;
+            }
+
+            // Undo simulation
+            gameState.board[from] = player;
+            gameState.board[to] = null;
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = { from, to };
+            }
+        }
+    }
+
+    return bestMove;
+}
+
+function getBestRemovalMoveForPlayer(player) {
+    const opponent = player === 'white' ? 'black' : 'white';
+    let bestScore = -Infinity;
+    let bestMove = null;
+
+    const opponentPositions = gameState.board
+        .map((piece, idx) => piece === opponent ? idx : -1)
+        .filter(idx => idx !== -1);
+
+    for (let pos of opponentPositions) {
+        // Check if can be removed
+        if (isInMill(pos, opponent)) {
+            const hasNonMillPiece = opponentPositions.some(p => !isInMill(p, opponent));
+            if (hasNonMillPiece) continue; // Can't remove from mill
+        }
+
+        // Simulate removal
+        gameState.board[pos] = null;
+        gameState.pieceCount[opponent]--;
+
+        const score = evaluateBoardStateForPlayer(player);
+
+        // Undo simulation
+        gameState.board[pos] = opponent;
+        gameState.pieceCount[opponent]++;
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestMove = pos;
+        }
+    }
+
+    return bestMove;
+}
+
+function evaluateBoardStateForPlayer(player) {
+    const opponent = player === 'white' ? 'black' : 'white';
+    let score = 0;
+
+    // Piece count advantage
+    const pieceDiff = gameState.pieceCount[player] - gameState.pieceCount[opponent];
+    score += pieceDiff * 50;
+
+    // Mill count
+    const playerMills = countMills(player);
+    const opponentMills = countMills(opponent);
+    score += (playerMills - opponentMills) * 20;
+
+    // Potential mills
+    const playerPotentialMills = countAllPotentialMills(player);
+    const opponentPotentialMills = countAllPotentialMills(opponent);
+    score += (playerPotentialMills - opponentPotentialMills) * 10;
+
+    return score;
 }
 
 // ==================== UNDO/REDO ====================

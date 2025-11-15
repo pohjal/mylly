@@ -346,6 +346,44 @@ h1 {
     }
 }
 
+.position.hint {
+    animation: hintPulse 1.5s ease-in-out infinite;
+    stroke: #4CAF50;
+    stroke-width: 5;
+}
+
+.position.hint-from {
+    animation: hintFromPulse 1.5s ease-in-out infinite;
+    stroke: #2196F3;
+    stroke-width: 4;
+}
+
+@keyframes hintPulse {
+    0%, 100% {
+        stroke: #4CAF50;
+        stroke-width: 5;
+        filter: drop-shadow(0 0 8px rgba(76, 175, 80, 0.6));
+    }
+    50% {
+        stroke: #66BB6A;
+        stroke-width: 6;
+        filter: drop-shadow(0 0 16px rgba(76, 175, 80, 0.9));
+    }
+}
+
+@keyframes hintFromPulse {
+    0%, 100% {
+        stroke: #2196F3;
+        stroke-width: 4;
+        filter: drop-shadow(0 0 6px rgba(33, 150, 243, 0.5));
+    }
+    50% {
+        stroke: #42A5F5;
+        stroke-width: 5;
+        filter: drop-shadow(0 0 12px rgba(33, 150, 243, 0.8));
+    }
+}
+
 .controls {
     display: flex;
     justify-content: center;
